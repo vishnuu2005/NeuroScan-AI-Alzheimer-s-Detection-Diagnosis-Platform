@@ -1,0 +1,17 @@
+Flask
+Flask-SQLAlchemy
+python-dotenv
+Pillow
+groq
+matplotlib
+seaborn
+scikit-learn
+torch
+torchvision
+requests
+Werkzeug
+jinja2
+SQLAlchemy
+python-dotenv
+
+# Optional: add specific versions if needed

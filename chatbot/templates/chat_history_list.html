@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NeuroScan AI · Chat History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root{--bg:#080c14;--surface:#0d1421;--surface2:#111827;--border:#1e2d45;--accent:#0ea5e9;--accent2:#38bdf8;--accent-glow:rgba(14,165,233,0.15);--text:#f0f6ff;--muted:#64748b;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 0;z-index:100;}
+    .logo{display:flex;align-items:center;gap:.75rem;padding:0 1.5rem;margin-bottom:2rem;}
+    .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:white;box-shadow:0 0 15px var(--accent-glow);}
+    .logo-text{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;}
+    .logo-text span{color:var(--accent);}
+    .nav-section{padding:0 .75rem;margin-bottom:.5rem;}
+    .nav-label{font-size:.65rem;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:0 .75rem;margin-bottom:.4rem;}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:500;transition:all .15s;}
+    .nav-item:hover{background:var(--surface2);color:var(--text);}
+    .nav-item.active{background:var(--accent-glow);color:var(--accent);border:1px solid rgba(14,165,233,.2);}
+    .nav-item i{width:16px;text-align:center;font-size:.85rem;}
+    .sidebar-footer{margin-top:auto;padding:1rem 1.5rem;border-top:1px solid var(--border);}
+    .user-info{display:flex;align-items:center;gap:.75rem;}
+    .user-avatar{width:34px;height:34px;background:linear-gradient(135deg,#1e3a5f,#0ea5e9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:white;flex-shrink:0;}
+    .user-name{font-size:.82rem;font-weight:500;}
+    .user-role{font-size:.7rem;color:var(--muted);}
+    .logout-btn{margin-left:auto;color:var(--muted);font-size:.85rem;cursor:pointer;text-decoration:none;transition:color .2s;}
+    .logout-btn:hover{color:#ef4444;}
+    .main{margin-left:240px;padding:2rem;min-height:100vh;}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;}
+    .page-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:700;}
+    .page-sub{color:var(--muted);font-size:.85rem;margin-top:.2rem;}
+    /* Chat cards */
+    .chats-list{display:flex;flex-direction:column;gap:.8rem;}
+    .chat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;transition:all .2s;}
+    .chat-card:hover{border-color:rgba(14,165,233,.25);background:var(--surface2);}
+    .chat-icon{width:42px;height:42px;border-radius:10px;background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.2);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:1rem;flex-shrink:0;}
+    .chat-info{flex:1;}
+    .chat-title{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;margin-bottom:.25rem;}
+    .chat-meta{font-size:.78rem;color:var(--muted);display:flex;gap:1rem;flex-wrap:wrap;}
+    .chat-meta span{display:flex;align-items:center;gap:.3rem;}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .6rem;border-radius:20px;font-size:.72rem;font-weight:500;}
+    .badge-none{background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2);}
+    .badge-very-mild{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2);}
+    .badge-mild{background:rgba(249,115,22,.1);color:#fb923c;border:1px solid rgba(249,115,22,.2);}
+    .badge-moderate{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);}
+    .chat-actions{display:flex;gap:.5rem;flex-shrink:0;}
+    .action-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.35rem .75rem;border-radius:6px;font-size:.75rem;cursor:pointer;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;}
+    .action-btn:hover{border-color:var(--accent);color:var(--accent);}
+    .action-btn.danger:hover{border-color:#ef4444;color:#ef4444;}
+    .empty-state{text-align:center;padding:4rem;color:var(--muted);}
+    .empty-state i{font-size:3rem;margin-bottom:1rem;opacity:.2;display:block;}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon"><i class="fas fa-brain"></i></div>
+      <div class="logo-text">Neuro<span>Scan</span> AI</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <a href="/dashboard" class="nav-item"><i class="fas fa-th-large"></i> Dashboard</a>
+      <a href="/" class="nav-item"><i class="fas fa-upload"></i> New Scan</a>
+      <a href="/history" class="nav-item"><i class="fas fa-history"></i> Scan History</a>
+    </div>
+    <div class="nav-section" style="margin-top:1rem">
+      <div class="nav-label">Reports</div>
+      <a href="/reports" class="nav-item"><i class="fas fa-file-pdf"></i> My Reports</a>
+      <a href="/chat_history" class="nav-item active"><i class="fas fa-comments"></i> Chat History</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ current_user.name[0]|upper }}</div>
+        <div>
+          <div class="user-name">{{ current_user.name }}</div>
+          <div class="user-role">Medical Professional</div>
+        </div>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i></a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Chat History</div>
+        <div class="page-sub">All your conversations with the Alzheimer's assistant</div>
+      </div>
+    </div>
+
+    {% if chat_sessions %}
+    <div class="chats-list">
+      {% for chat in chat_sessions %}
+      <div class="chat-card" id="chat-card-{{ chat.id }}">
+        <div class="chat-icon"><i class="fas fa-comments"></i></div>
+        <div class="chat-info">
+          <div class="chat-title">
+            Conversation — {{ chat.created_at.strftime('%d %b %Y') }}
+          </div>
+          <div class="chat-meta">
+            <span><i class="fas fa-clock"></i>{{ chat.created_at.strftime('%I:%M %p') }}</span>
+            <span><i class="fas fa-comment-dots"></i>{{ chat.message_count }} messages</span>
+            {% if chat.scan_stage %}
+              <span>
+                {% if chat.scan_stage == 'NonDemented' %}
+                  <span class="badge badge-none">🟢 Non Demented</span>
+                {% elif chat.scan_stage == 'VeryMildDemented' %}
+                  <span class="badge badge-very-mild">🟡 Very Mild</span>
+                {% elif chat.scan_stage == 'MildDemented' %}
+                  <span class="badge badge-mild">🟠 Mild</span>
+                {% elif chat.scan_stage == 'ModerateDemented' %}
+                  <span class="badge badge-moderate">🔴 Moderate</span>
+                {% endif %}
+              </span>
+            {% else %}
+              <span style="color:var(--muted)"><i class="fas fa-minus"></i> No scan linked</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="chat-actions">
+          <a href="/chat_history/{{ chat.id }}" class="action-btn">
+            <i class="fas fa-eye"></i> View
+          </a>
+          <button class="action-btn danger" onclick="deleteChat({{ chat.id }})">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-comments"></i>
+      <p>No conversations yet. Start chatting with the assistant after uploading a scan.</p>
+    </div>
+    {% endif %}
+  </main>
+
+  <script>
+    function deleteChat(id) {
+      if (!confirm('Delete this conversation permanently?')) return;
+      fetch(`/delete_chat/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'deleted') {
+            const card = document.getElementById(`chat-card-${id}`);
+            card.style.opacity = '0';
+            card.style.transition = 'opacity 0.3s';
+            setTimeout(() => card.remove(), 300);
+          }
+        });
+    }
+  </script>
+</body>
+</html>

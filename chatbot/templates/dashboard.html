@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NeuroScan AI · Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #080c14;
+      --surface: #0d1421;
+      --surface2: #111827;
+      --border: #1e2d45;
+      --accent: #0ea5e9;
+      --accent2: #38bdf8;
+      --accent-glow: rgba(14,165,233,0.15);
+      --text: #f0f6ff;
+      --muted: #64748b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --mild: #f59e0b;
+      --moderate: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 0;
+      z-index: 100;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: white;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .logo-text span { color: var(--accent); }
+
+    .nav-section {
+      padding: 0 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .nav-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0 0.75rem;
+      margin-bottom: 0.4rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(14,165,233,0.2); }
+    .nav-item i { width: 16px; text-align: center; font-size: 0.85rem; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .user-avatar {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #1e3a5f, #0ea5e9);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: white;
+      flex-shrink: 0;
+    }
+    .user-name { font-size: 0.82rem; font-weight: 500; }
+    .user-role { font-size: 0.7rem; color: var(--muted); }
+    .logout-btn {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .logout-btn:hover { color: var(--danger); }
+
+    /* Main content */
+    .main { margin-left: 240px; padding: 2rem; min-height: 100vh; }
+
+    /* Header */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .page-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .page-subtitle { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+    .btn-new {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-new:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(14,165,233,0.3); }
+
+    /* Stats cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      transition: border-color 0.2s;
+    }
+    .stat-card:hover { border-color: rgba(14,165,233,0.3); }
+    .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .stat-value { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; }
+    .stat-icon { float: right; margin-top: -2.2rem; font-size: 1.5rem; opacity: 0.15; }
+
+    /* History table */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .section-header {
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      padding: 0.75rem 1.5rem;
+      text-align: left;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+    }
+    td {
+      padding: 1rem 1.5rem;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(30,45,69,0.5);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(14,165,233,0.03); }
+
+    /* Stage badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .badge-none { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .badge-very-mild { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .badge-mild { background: rgba(249,115,22,0.1); color: #fb923c; border: 1px solid rgba(249,115,22,0.2); }
+    .badge-moderate { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .badge-unknown { background: rgba(100,116,139,0.1); color: #94a3b8; border: 1px solid rgba(100,116,139,0.2); }
+
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .confidence-bar {
+      width: 80px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    .confidence-fill {
+      height: 100%;
+      border-radius: 10px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+    }
+    .empty-state i { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.3; display: block; }
+    .empty-state p { font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon"><i class="fas fa-brain"></i></div>
+      <div class="logo-text">Neuro<span>Scan</span> AI</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <a href="/dashboard" class="nav-item active">
+        <i class="fas fa-th-large"></i> Dashboard
+      </a>
+      <a href="/" class="nav-item">
+        <i class="fas fa-upload"></i> New Scan
+      </a>
+      <a href="/history" class="nav-item">
+        <i class="fas fa-history"></i> Scan History
+      </a>
+    </div>
+
+    <div class="nav-section" style="margin-top:1rem">
+      <div class="nav-label">Reports</div>
+      <a href="/reports" class="nav-item">
+        <i class="fas fa-file-pdf"></i> My Reports
+      </a>
+      <a href="/chat_history" class="nav-item">
+        <i class="fas fa-comments"></i> Chat History
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ current_user.name[0] | upper if current_user else 'U' }}</div>
+        <div>
+          <div class="user-name">{{ current_user.name if current_user else 'User' }}</div>
+          <div class="user-role">Medical Professional</div>
+        </div>
+        <a href="/logout" class="logout-btn" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-subtitle">Welcome back, {{ current_user.name if current_user else 'Doctor' }}</div>
+      </div>
+      <a href="/" class="btn-new"><i class="fas fa-plus"></i> New Scan</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Scans</div>
+        <div class="stat-value" style="color:var(--accent)">{{ total_scans | default(0) }}</div>
+        <div class="stat-icon"><i class="fas fa-brain"></i></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Non Demented</div>
+        <div class="stat-value" style="color:#34d399">{{ non_demented | default(0) }}</div>
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Mild / Very Mild</div>
+        <div class="stat-value" style="color:#fbbf24">{{ mild_count | default(0) }}</div>
+        <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Moderate</div>
+        <div class="stat-value" style="color:#f87171">{{ moderate_count | default(0) }}</div>
+        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+      </div>
+    </div>
+
+    <!-- Scan History -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px"></i>Recent Scans</div>
+      </div>
+      {% if scans %}
+      <table>
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Prediction</th>
+            <th>Confidence</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for scan in scans %}
+          <tr>
+            <td style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--muted)">
+              {{ scan.created_at.strftime('%d %b %Y, %I:%M %p') }}
+            </td>
+            <td>
+              {% if scan.prediction == 'NonDemented' %}
+                <span class="badge badge-none">🟢 Non Demented</span>
+              {% elif scan.prediction == 'VeryMildDemented' %}
+                <span class="badge badge-very-mild">🟡 Very Mild</span>
+              {% elif scan.prediction == 'MildDemented' %}
+                <span class="badge badge-mild">🟠 Mild</span>
+              {% elif scan.prediction == 'ModerateDemented' %}
+                <span class="badge badge-moderate">🔴 Moderate</span>
+              {% else %}
+                <span class="badge badge-unknown">⚪ Unknown</span>
+              {% endif %}
+            </td>
+            <td>
+              {{ scan.confidence | round(1) }}%
+              <span class="confidence-bar">
+                <span class="confidence-fill" style="width:{{ scan.confidence }}%;
+                  background: {% if scan.confidence > 75 %}#10b981{% elif scan.confidence > 60 %}#f59e0b{% else %}#ef4444{% endif %}">
+                </span>
+              </span>
+            </td>
+            <td>
+              <a href="/download_report/{{ scan.id }}" class="action-btn">
+                <i class="fas fa-file-pdf"></i> PDF
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-brain"></i>
+        <p>No scans yet. <a href="/" style="color:var(--accent)">Upload your first MRI scan</a> to get started.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Chat History -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title"><i class="fas fa-comments" style="color:var(--accent);margin-right:8px"></i>Recent Conversations</div>
+      </div>
+      {% if chat_sessions %}
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Messages</th>
+            <th>Related Scan</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for chat in chat_sessions %}
+          <tr>
+            <td style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--muted)">
+              {{ chat.created_at.strftime('%d %b %Y') }}
+            </td>
+            <td>{{ chat.message_count }} messages</td>
+            <td>
+              {% if chat.scan_stage %}
+                <span class="badge badge-{{ chat.scan_stage | lower | replace('demented','') | trim }}">{{ chat.scan_stage }}</span>
+              {% else %}
+                <span style="color:var(--muted);font-size:0.8rem">No scan</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="/chat_history/{{ chat.id }}" class="action-btn">
+                <i class="fas fa-eye"></i> View
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class="fas fa-comments"></i>
+        <p>No conversations yet. Start chatting with the assistant after uploading a scan.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </main>
+
+</body>
+</html>

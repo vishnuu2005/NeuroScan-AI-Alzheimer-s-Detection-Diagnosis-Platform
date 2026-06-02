@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NeuroScan AI · My Reports</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root{--bg:#080c14;--surface:#0d1421;--surface2:#111827;--border:#1e2d45;--accent:#0ea5e9;--accent2:#38bdf8;--accent-glow:rgba(14,165,233,0.15);--text:#f0f6ff;--muted:#64748b;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 0;z-index:100;}
+    .logo{display:flex;align-items:center;gap:.75rem;padding:0 1.5rem;margin-bottom:2rem;}
+    .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:white;box-shadow:0 0 15px var(--accent-glow);}
+    .logo-text{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;}
+    .logo-text span{color:var(--accent);}
+    .nav-section{padding:0 .75rem;margin-bottom:.5rem;}
+    .nav-label{font-size:.65rem;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:0 .75rem;margin-bottom:.4rem;}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:500;transition:all .15s;}
+    .nav-item:hover{background:var(--surface2);color:var(--text);}
+    .nav-item.active{background:var(--accent-glow);color:var(--accent);border:1px solid rgba(14,165,233,.2);}
+    .nav-item i{width:16px;text-align:center;font-size:.85rem;}
+    .sidebar-footer{margin-top:auto;padding:1rem 1.5rem;border-top:1px solid var(--border);}
+    .user-info{display:flex;align-items:center;gap:.75rem;}
+    .user-avatar{width:34px;height:34px;background:linear-gradient(135deg,#1e3a5f,#0ea5e9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:white;flex-shrink:0;}
+    .user-name{font-size:.82rem;font-weight:500;}
+    .user-role{font-size:.7rem;color:var(--muted);}
+    .logout-btn{margin-left:auto;color:var(--muted);font-size:.85rem;cursor:pointer;text-decoration:none;transition:color .2s;}
+    .logout-btn:hover{color:#ef4444;}
+    .main{margin-left:240px;padding:2rem;min-height:100vh;}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;}
+    .page-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:700;}
+    .page-sub{color:var(--muted);font-size:.85rem;margin-top:.2rem;}
+    /* Report cards grid */
+    .reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.2rem;}
+    .report-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.4rem;transition:all .2s;position:relative;overflow:hidden;}
+    .report-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+    .report-card.none::before{background:linear-gradient(90deg,#10b981,#34d399);}
+    .report-card.very-mild::before{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
+    .report-card.mild::before{background:linear-gradient(90deg,#f97316,#fb923c);}
+    .report-card.moderate::before{background:linear-gradient(90deg,#ef4444,#f87171);}
+    .report-card:hover{border-color:rgba(14,165,233,.3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+    .report-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:1rem;}
+    .report-icon.none{background:rgba(16,185,129,.1);color:#34d399;}
+    .report-icon.very-mild{background:rgba(245,158,11,.1);color:#fbbf24;}
+    .report-icon.mild{background:rgba(249,115,22,.1);color:#fb923c;}
+    .report-icon.moderate{background:rgba(239,68,68,.1);color:#f87171;}
+    .report-title{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:.3rem;}
+    .report-date{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);margin-bottom:.8rem;}
+    .report-conf{font-size:.8rem;color:var(--muted);margin-bottom:1rem;}
+    .report-conf span{font-family:'DM Mono',monospace;font-weight:500;}
+    .conf-bar-sm{height:3px;background:var(--border);border-radius:10px;overflow:hidden;margin-top:.3rem;}
+    .conf-fill-sm{height:100%;border-radius:10px;}
+    .download-btn{width:100%;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:.6rem;font-family:'Syne',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:.5rem;}
+    .download-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+    .empty-state{text-align:center;padding:4rem;color:var(--muted);}
+    .empty-state i{font-size:3rem;margin-bottom:1rem;opacity:.2;display:block;}
+    .empty-state p{font-size:.9rem;}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon"><i class="fas fa-brain"></i></div>
+      <div class="logo-text">Neuro<span>Scan</span> AI</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <a href="/dashboard" class="nav-item"><i class="fas fa-th-large"></i> Dashboard</a>
+      <a href="/" class="nav-item"><i class="fas fa-upload"></i> New Scan</a>
+      <a href="/history" class="nav-item"><i class="fas fa-history"></i> Scan History</a>
+    </div>
+    <div class="nav-section" style="margin-top:1rem">
+      <div class="nav-label">Reports</div>
+      <a href="/reports" class="nav-item active"><i class="fas fa-file-pdf"></i> My Reports</a>
+      <a href="/chat_history" class="nav-item"><i class="fas fa-comments"></i> Chat History</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ current_user.name[0]|upper }}</div>
+        <div>
+          <div class="user-name">{{ current_user.name }}</div>
+          <div class="user-role">Medical Professional</div>
+        </div>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i></a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">My Reports</div>
+        <div class="page-sub">Download PDF reports for any of your past MRI scans</div>
+      </div>
+    </div>
+
+    {% if scans %}
+    <div class="reports-grid">
+      {% for scan in scans %}
+        {% if scan.prediction == 'NonDemented' %}
+          {% set cls = 'none' %}{% set label = '🟢 Non Demented' %}
+        {% elif scan.prediction == 'VeryMildDemented' %}
+          {% set cls = 'very-mild' %}{% set label = '🟡 Very Mild Demented' %}
+        {% elif scan.prediction == 'MildDemented' %}
+          {% set cls = 'mild' %}{% set label = '🟠 Mild Demented' %}
+        {% elif scan.prediction == 'ModerateDemented' %}
+          {% set cls = 'moderate' %}{% set label = '🔴 Moderate Demented' %}
+        {% else %}
+          {% set cls = 'none' %}{% set label = '⚪ Unknown' %}
+        {% endif %}
+      <div class="report-card {{ cls }}">
+        <div class="report-icon {{ cls }}"><i class="fas fa-file-medical"></i></div>
+        <div class="report-title">{{ label }}</div>
+        <div class="report-date">{{ scan.created_at.strftime('%d %b %Y · %I:%M %p') }}</div>
+        <div class="report-conf">
+          Confidence: <span>{{ scan.confidence|round(1) }}%</span>
+          <div class="conf-bar-sm">
+            <div class="conf-fill-sm" style="width:{{ scan.confidence }}%;background:{% if scan.confidence > 75 %}#10b981{% elif scan.confidence > 60 %}#f59e0b{% else %}#ef4444{% endif %}"></div>
+          </div>
+        </div>
+        <a href="/download_report/{{ scan.id }}" class="download-btn">
+          <i class="fas fa-file-pdf"></i> Download PDF Report
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-file-pdf"></i>
+      <p>No reports yet. <a href="/" style="color:var(--accent)">Upload an MRI scan</a> to generate your first report.</p>
+    </div>
+    {% endif %}
+  </main>
+</body>
+</html>
