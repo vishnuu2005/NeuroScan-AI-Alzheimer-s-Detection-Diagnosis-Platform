@@ -55,6 +55,8 @@ torch_cache/
 plots/
 chatbot/static/uploads/
 chatbot/static/reports/
+data/
+data/**
 
 # OS files
 .DS_Store
