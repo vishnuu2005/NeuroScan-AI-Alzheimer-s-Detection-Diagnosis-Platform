@@ -1,3 +1,4 @@
+import time
 import re
 import os
 import json
@@ -114,13 +115,15 @@ class User(db.Model):
     chat_sessions = db.relationship('ChatSession', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Scan(db.Model):
-    id          = db.Column(db.Integer, primary_key=True)
-    user_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    prediction  = db.Column(db.String(50), nullable=False)
-    confidence  = db.Column(db.Float, nullable=False)
-    all_probs   = db.Column(db.Text, nullable=False)
-    warning     = db.Column(db.String(200))
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    id            = db.Column(db.Integer, primary_key=True)
+    user_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    prediction    = db.Column(db.String(50), nullable=False)
+    confidence    = db.Column(db.Float, nullable=False)
+    all_probs     = db.Column(db.Text, nullable=False)
+    warning       = db.Column(db.String(200))
+    processing_ms = db.Column(db.Float, default=0.0)
+    model_version = db.Column(db.String(50), default='ResNet18-Adaptive')
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ChatSession(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
