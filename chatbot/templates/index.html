@@ -160,6 +160,12 @@
     }
     .btn-predict:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(14,165,233,0.3); }
     .btn-predict:active { transform: scale(0.98); }
+    .btn-predict:disabled, .send-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
 
     /* Results */
     .results-section { margin-top: 1.5rem; animation: fadeIn 0.4s ease; }
@@ -461,8 +467,8 @@
             <div class="upload-text">Drop MRI scan here or <strong>browse</strong></div>
             <div class="selected-file" id="file-name"></div>
           </div>
-          <button type="submit" class="btn-predict">
-            <i class="fas fa-search"></i> Analyse Scan
+          <button type="submit" class="btn-predict" id="btn-predict">
+            <i class="fas fa-search" id="btn-predict-icon"></i> <span id="btn-predict-text">Analyse Scan</span>
           </button>
         </form>
 
@@ -610,16 +616,60 @@
   </main>
 
   <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const uploadForm = document.getElementById('upload-form');
+      if (uploadForm) {
+        uploadForm.addEventListener('submit', function() {
+          const btn = document.getElementById('btn-predict');
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Analyzing Scan...';
+            btn.style.opacity = '0.75';
+            btn.style.cursor = 'not-allowed';
+          }
+        });
+      }
+    });
+
+    let isSubmittingChat = false;
+
     function sendMessage() {
+      if (isSubmittingChat) return;
       const input = document.getElementById('chat-input');
+      const sendBtn = document.querySelector('.send-btn');
       const msg = input.value.trim();
       if (!msg) return;
+
+      isSubmittingChat = true;
+      if (sendBtn) sendBtn.disabled = true;
       appendMsg('You', msg, true);
       input.value = '';
       showTyping();
-      fetch('/chat', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: msg}) })
-        .then(r => r.json())
-        .then(data => { removeTyping(); appendMsg('Bot', data.response, false); });
+
+      fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: msg})
+      })
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        removeTyping();
+        const reply = data.response || data.error || 'No response received.';
+        appendMsg('Bot', reply, false);
+      })
+      .catch(err => {
+        removeTyping();
+        appendMsg('Bot', '**Notice:** Assistant is currently unable to respond. Please try again.', false);
+        console.error('Chat submission error:', err);
+      })
+      .finally(() => {
+        isSubmittingChat = false;
+        if (sendBtn) sendBtn.disabled = false;
+        input.focus();
+      });
     }
 
     function askSuggestion(btn) {
