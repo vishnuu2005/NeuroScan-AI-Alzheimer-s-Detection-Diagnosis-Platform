@@ -188,7 +188,7 @@ if custom_model_env:
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(base_dir)
-candidate_names = ["resnet2d_alzheimers_best.pth", "resnet2d_alzheimers.pth"]
+candidate_names = ["resnet2d_alzheimers.pth", "resnet2d_alzheimers_best.pth"]
 candidate_dirs = [
     os.path.join(project_root, "models"),
     os.path.join(os.getcwd(), "models"),
@@ -201,15 +201,19 @@ for d in candidate_dirs:
         possible_model_paths.append(os.path.join(d, name))
 
 model_path = None
+alz_model = None
 for p in possible_model_paths:
     p_norm = os.path.normpath(p)
     if os.path.exists(p_norm):
-        model_path = p_norm
-        break
-if model_path is None:
-    raise FileNotFoundError("ResNet checkpoint not found in expected locations.\n"
-                            "Checked: " + ", ".join(possible_model_paths))
-alz_model = load_model(model_path, num_classes=len(classes))
+        try:
+            alz_model = load_model(p_norm, num_classes=len(classes))
+            model_path = p_norm
+            break
+        except Exception as e:
+            continue
+
+if alz_model is None:
+    print("Warning: No compatible ResNet checkpoint loaded. Checked: " + ", ".join(possible_model_paths))
 
 # REMOVED: local transform_image definition (was overwriting the import)
 # REMOVED: IMAGE_SIZE constant (defined inside inference.py)
@@ -455,7 +459,10 @@ def index():
             return redirect(request.url)
 
         try:
-            image_tensor = transform_image(filepath, in_channels=getattr(alz_model, 'in_channels', 3))   # ✅ uses inference.py's version
+            try:
+                image_tensor = transform_image(filepath, in_channels=getattr(alz_model, 'in_channels', 1))
+            except TypeError:
+                image_tensor = transform_image(filepath)
             prediction, confidence, all_probs, warning = predict(alz_model, image_tensor, classes)
             description = stage_info.get(prediction, '')
             risk        = stage_risk.get(prediction, 'unknown')
