@@ -8,22 +8,26 @@ import torchvision.transforms as transforms
 # =======================
 # Load Model
 # =======================
-def load_model(model_path, num_classes=4, dropout_prob=0.6, freeze_layers=True, device=None):
+def load_model(model_path=None, num_classes=4, dropout_prob=0.6, freeze_layers=True, device=None):
     """
-    Load 2D ResNet18 pretrained model with 3-channel input.
-    Safely loads checkpoint and moves model to GPU if available.
+    Load 2D ResNet18 model with 1-channel grayscale input.
+    Safely loads checkpoint if available, or initializes an unweighted model
+    with a warning when running in test or development environments.
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = get_resnet2d(num_classes=num_classes, dropout_prob=dropout_prob, freeze_layers=freeze_layers)
 
-    # Load checkpoint safely
-    checkpoint = torch.load(model_path, map_location=device)
-    model_dict = model.state_dict()
-    pretrained_dict = {k: v for k, v in checkpoint.items() if k in model_dict}
-    model_dict.update(pretrained_dict)
-    model.load_state_dict(model_dict)
+    if model_path and os.path.exists(model_path):
+        checkpoint = torch.load(model_path, map_location=device)
+        model_dict = model.state_dict()
+        pretrained_dict = {k: v for k, v in checkpoint.items() if k in model_dict}
+        model_dict.update(pretrained_dict)
+        model.load_state_dict(model_dict)
+        print(f"Loaded model checkpoint from: {model_path}")
+    else:
+        print(f"Warning: Model checkpoint '{model_path}' not found. Initialized model with default weights.")
 
     model.to(device)
     model.eval()

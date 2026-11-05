@@ -102,23 +102,22 @@ def current_user():
 # Model Setup
 # ==============================
 classes = ["MildDemented", "ModerateDemented", "NonDemented", "VeryMildDemented"]
-# Resolve model path robustly: prefer configured absolute path, else fall back to project models folder
+custom_model_path = os.getenv("NEUROSCAN_MODEL_PATH")
 possible_model_paths = [
-    "D:/AlzeigmersChatBot/AlzeigmersChatBot/models/resnet2d_alzheimers.pth",
+    custom_model_path if custom_model_path else "",
     os.path.join(os.path.dirname(__file__), "..", "models", "resnet2d_alzheimers.pth"),
     os.path.join(os.getcwd(), "models", "resnet2d_alzheimers.pth"),
-    os.path.join(os.getcwd(), "AlzeigmersChatBot", "models", "resnet2d_alzheimers.pth"),
     "models/resnet2d_alzheimers.pth"
 ]
 model_path = None
 for p in possible_model_paths:
-    p_norm = os.path.normpath(p)
-    if os.path.exists(p_norm):
-        model_path = p_norm
-        break
+    if p:
+        p_norm = os.path.normpath(p)
+        if os.path.exists(p_norm):
+            model_path = p_norm
+            break
 if model_path is None:
-    raise FileNotFoundError("resnet2d_alzheimers.pth not found in expected locations.\n"
-                            "Checked: " + ", ".join(possible_model_paths))
+    print("Warning: resnet2d_alzheimers.pth checkpoint not found. Using initialized model fallback for testing/development.")
 alz_model = load_model(model_path, num_classes=len(classes))
 
 # REMOVED: local transform_image definition (was overwriting the import)

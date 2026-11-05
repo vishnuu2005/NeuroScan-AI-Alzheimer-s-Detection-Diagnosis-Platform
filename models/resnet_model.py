@@ -3,7 +3,11 @@ import torch.nn as nn
 
 
 def get_resnet2d(num_classes=4, dropout_prob=0.6, freeze_layers=True):
-    model = models.resnet18(pretrained=False)
+    # Support modern torchvision weights parameter while preserving backwards compatibility
+    try:
+        model = models.resnet18(weights=None)
+    except TypeError:
+        model = models.resnet18(pretrained=False)
 
     # Match the saved checkpoint — grayscale input (1 channel)
     model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
