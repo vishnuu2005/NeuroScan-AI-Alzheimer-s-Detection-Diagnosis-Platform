@@ -45,9 +45,19 @@ if USE_GROQ:
 # ==============================
 # Flask + DB Setup
 # ==============================
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
+TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
+UPLOADS_DIR = os.path.join(STATIC_DIR, 'uploads')
+REPORTS_DIR = os.path.join(STATIC_DIR, 'reports')
+
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(REPORTS_DIR, exist_ok=True)
+
+app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "neuroscan_secret_2024")
-app.config['UPLOAD_FOLDER'] = 'static/uploads/'
+app.config['UPLOAD_FOLDER'] = UPLOADS_DIR
+app.config['REPORTS_FOLDER'] = REPORTS_DIR
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///neuroscan.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -406,8 +416,7 @@ def download_report():
     all_probs  = session.get('all_probs')
     if not stage or not confidence or not all_probs:
         return 'No prediction found. Please upload a scan first.', 400
-    report_path = 'static/reports/alzheimers_report.pdf'
-    os.makedirs('static/reports', exist_ok=True)
+    report_path = os.path.join(app.config['REPORTS_FOLDER'], 'alzheimers_report.pdf')
     generate_report(stage, confidence, all_probs, report_path)
     return send_file(report_path, as_attachment=True,
                      download_name='alzheimers_mri_report.pdf',
@@ -421,8 +430,7 @@ def download_report_by_id(scan_id):
     if scan.user_id != user.id:
         return 'Unauthorized', 403
     all_probs   = json.loads(scan.all_probs)
-    report_path = f'static/reports/report_{scan_id}.pdf'
-    os.makedirs('static/reports', exist_ok=True)
+    report_path = os.path.join(app.config['REPORTS_FOLDER'], f'report_{scan_id}.pdf')
     generate_report(scan.prediction, scan.confidence, all_probs, report_path)
     return send_file(report_path, as_attachment=True,
                      download_name=f'alzheimers_report_{scan_id}.pdf',
