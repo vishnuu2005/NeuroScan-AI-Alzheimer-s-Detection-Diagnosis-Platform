@@ -283,17 +283,28 @@ def logout():
 @login_required
 def dashboard():
     user          = current_user()
-    scans         = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).all()
+    all_scans     = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).all()
     chat_sessions = ChatSession.query.filter_by(user_id=user.id)\
                                      .order_by(ChatSession.created_at.desc()).all()
-    total_scans    = len(scans)
-    non_demented   = sum(1 for s in scans if s.prediction == 'NonDemented')
-    mild_count     = sum(1 for s in scans if s.prediction in ['MildDemented', 'VeryMildDemented'])
-    moderate_count = sum(1 for s in scans if s.prediction == 'ModerateDemented')
+    total_scans     = len(all_scans)
+    non_demented    = sum(1 for s in all_scans if s.prediction == 'NonDemented')
+    mild_count      = sum(1 for s in all_scans if s.prediction in ['MildDemented', 'VeryMildDemented'])
+    moderate_count  = sum(1 for s in all_scans if s.prediction == 'ModerateDemented')
+    uncertain_count = sum(1 for s in all_scans if s.prediction in ['Uncertain', 'Unknown / Low Confidence'])
+    avg_confidence  = round(sum(s.confidence for s in all_scans) / total_scans, 1) if total_scans else 0.0
+
+    stage_filter = request.args.get('stage', '').strip()
+    if stage_filter:
+        scans = [s for s in all_scans if s.prediction.lower() == stage_filter.lower()]
+    else:
+        scans = all_scans
+
     return render_template('dashboard.html',
         current_user=user, scans=scans, chat_sessions=chat_sessions,
         total_scans=total_scans, non_demented=non_demented,
-        mild_count=mild_count, moderate_count=moderate_count)
+        mild_count=mild_count, moderate_count=moderate_count,
+        uncertain_count=uncertain_count, avg_confidence=avg_confidence,
+        active_stage=stage_filter)
 
 # ==============================
 # Routes — Chat History
