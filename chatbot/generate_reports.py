@@ -384,20 +384,29 @@ def generate_report(prediction: str,
     # Header row
     th_style = S("th", fontName="Helvetica-Bold", fontSize=8, textColor=WHITE)
     prob_rows = [[
-        Paragraph("Classification",      th_style),
+        Paragraph("Classification Stage", th_style),
         Paragraph("Probability",         S("th2", fontName="Helvetica-Bold", fontSize=8, textColor=WHITE, alignment=TA_CENTER)),
-        Paragraph("Confidence Bar",      th_style),
+        Paragraph("Confidence Visualizer", th_style),
     ]]
+
+    label_map = {
+        "NonDemented": "Non-Demented",
+        "VeryMildDemented": "Very Mild Dementia",
+        "MildDemented": "Mild Dementia",
+        "ModerateDemented": "Moderate Dementia",
+        "Uncertain": "Uncertain / Inconclusive"
+    }
 
     sorted_probs = sorted(all_probs.items(), key=lambda x: x[1], reverse=True)
     for i, (cls, prob) in enumerate(sorted_probs):
         is_top = (cls == prediction)
+        display_name = label_map.get(cls, cls)
         filled = int(round(prob / 5))   # out of 20 chars
         empty  = 20 - filled
         bar_str = ("█" * filled + "░" * empty)
 
         name_para = Paragraph(
-            f'<b>{"▶  " if is_top else "     "}{cls}</b>' if is_top else f'     {cls}',
+            f'<b>{"▶  " if is_top else "     "}{display_name}</b>' if is_top else f'     {display_name}',
             S("td", fontName="Helvetica-Bold" if is_top else "Helvetica",
               fontSize=9, textColor=accent if is_top else SLATE)
         )
