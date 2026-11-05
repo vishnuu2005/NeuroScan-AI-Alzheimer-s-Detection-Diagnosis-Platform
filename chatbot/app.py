@@ -550,15 +550,25 @@ def clear_chat():
 @app.route('/download_report')
 @login_required
 def download_report():
+    user       = current_user()
     stage      = session.get('stage')
     confidence = session.get('confidence')
     all_probs  = session.get('all_probs')
     if not stage or not confidence or not all_probs:
         return 'No prediction found. Please upload a scan first.', 400
-    report_path = os.path.join(app.config['REPORTS_FOLDER'], 'alzheimers_report.pdf')
-    generate_report(stage, confidence, all_probs, report_path)
+
+    unique_suffix = f"{user.id}_{uuid.uuid4().hex[:8]}"
+    report_path = os.path.join(app.config['REPORTS_FOLDER'], f"report_{unique_suffix}.pdf")
+    generate_report(
+        prediction=stage,
+        confidence=confidence,
+        all_probs=all_probs,
+        output_path=report_path,
+        model_version=session.get('model_version', 'ResNet18-Adaptive'),
+        reference_id=f"NS-{unique_suffix.upper()}"
+    )
     return send_file(report_path, as_attachment=True,
-                     download_name='alzheimers_mri_report.pdf',
+                     download_name=f'neuroscan_report_{stage}.pdf',
                      mimetype='application/pdf')
 
 @app.route('/download_report/<int:scan_id>')
@@ -569,10 +579,17 @@ def download_report_by_id(scan_id):
     if scan.user_id != user.id:
         return 'Unauthorized', 403
     all_probs   = json.loads(scan.all_probs)
-    report_path = os.path.join(app.config['REPORTS_FOLDER'], f'report_{scan_id}.pdf')
-    generate_report(scan.prediction, scan.confidence, all_probs, report_path)
+    report_path = os.path.join(app.config['REPORTS_FOLDER'], f'report_{scan.id}_{scan.user_id}.pdf')
+    generate_report(
+        prediction=scan.prediction,
+        confidence=scan.confidence,
+        all_probs=all_probs,
+        output_path=report_path,
+        model_version=scan.model_version or "ResNet18-Adaptive",
+        reference_id=f"NS-SCAN-{scan.id:06d}"
+    )
     return send_file(report_path, as_attachment=True,
-                     download_name=f'alzheimers_report_{scan_id}.pdf',
+                     download_name=f'neuroscan_report_scan_{scan_id}.pdf',
                      mimetype='application/pdf')
 
 # ==============================
