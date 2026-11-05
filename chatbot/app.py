@@ -1,3 +1,4 @@
+import re
 import os
 import json
 
@@ -56,6 +57,9 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "neuroscan_secret_2024")
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 app.config['UPLOAD_FOLDER'] = UPLOADS_DIR
 app.config['REPORTS_FOLDER'] = REPORTS_DIR
 # Database Configuration - Robust path resolution
@@ -322,17 +326,30 @@ def login():
         flash('Invalid email or password.', 'error')
     return render_template('login.html')
 
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+
 @app.route('/register', methods=['POST'])
 def register():
     name     = request.form.get('name', '').strip()
     email    = request.form.get('email', '').strip().lower()
     password = request.form.get('password', '')
+    
+    if not name:
+        flash('Full name is required.', 'error')
+        return redirect(url_for('login'))
+        
+    if not email or not EMAIL_REGEX.match(email):
+        flash('Please enter a valid clinical email address.', 'error')
+        return redirect(url_for('login'))
+        
     if User.query.filter_by(email=email).first():
-        flash('Email already registered.', 'error')
+        flash('Email already registered. Please sign in.', 'error')
         return redirect(url_for('login'))
-    if len(password) < 6:
-        flash('Password must be at least 6 characters.', 'error')
+        
+    if len(password) < 8:
+        flash('Password must be at least 8 characters for security compliance.', 'error')
         return redirect(url_for('login'))
+        
     user = User(name=name, email=email, password=generate_password_hash(password))
     db.session.add(user)
     db.session.commit()
