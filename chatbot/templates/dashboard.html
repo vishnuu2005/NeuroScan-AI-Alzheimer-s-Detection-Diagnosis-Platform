@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     :root {
       --bg: #080c14;
@@ -329,24 +330,46 @@
 
     <!-- Stats -->
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Scans</div>
+      <div class="stat-card" style="transition: transform 0.2s, border-color 0.2s; cursor: pointer;">
+        <div class="stat-label">Total Diagnostic Scans</div>
         <div class="stat-value" style="color:var(--accent)">{{ total_scans | default(0) }}</div>
+        <div style="font-size:0.7rem; color:var(--muted); margin-top:0.3rem;">Lifetime neurological cohort</div>
         <div class="stat-icon"><i class="fas fa-brain"></i></div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Non Demented</div>
+      <div class="stat-card" style="transition: transform 0.2s, border-color 0.2s; cursor: pointer;">
+        <div class="stat-label">Non-Demented</div>
         <div class="stat-value" style="color:#34d399">{{ non_demented | default(0) }}</div>
+        <div style="font-size:0.7rem; color:var(--muted); margin-top:0.3rem;">
+          {% if total_scans and total_scans > 0 %}
+            {{ ((non_demented / total_scans) * 100) | round(1) }}% of cohort
+          {% else %}
+            0.0% of cohort
+          {% endif %}
+        </div>
         <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="transition: transform 0.2s, border-color 0.2s; cursor: pointer;">
         <div class="stat-label">Mild / Very Mild</div>
         <div class="stat-value" style="color:#fbbf24">{{ mild_count | default(0) }}</div>
+        <div style="font-size:0.7rem; color:var(--muted); margin-top:0.3rem;">
+          {% if total_scans and total_scans > 0 %}
+            {{ ((mild_count / total_scans) * 100) | round(1) }}% of cohort
+          {% else %}
+            0.0% of cohort
+          {% endif %}
+        </div>
         <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Moderate</div>
+      <div class="stat-card" style="transition: transform 0.2s, border-color 0.2s; cursor: pointer;">
+        <div class="stat-label">Moderate Decline</div>
         <div class="stat-value" style="color:#f87171">{{ moderate_count | default(0) }}</div>
+        <div style="font-size:0.7rem; color:var(--muted); margin-top:0.3rem;">
+          {% if total_scans and total_scans > 0 %}
+            {{ ((moderate_count / total_scans) * 100) | round(1) }}% of cohort
+          {% else %}
+            0.0% of cohort
+          {% endif %}
+        </div>
         <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
       </div>
     </div>
