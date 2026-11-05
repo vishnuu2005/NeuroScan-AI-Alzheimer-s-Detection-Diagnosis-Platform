@@ -27,11 +27,13 @@ try:
     from .generate_reports import generate_report
     from .validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
     from .formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
+    from .clinical_ai import CLINICAL_SYSTEM_PROMPT, generate_local_clinical_response
 except ImportError:
     from inference import load_model, predict, transform_image
     from generate_reports import generate_report
     from validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
     from formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
+    from clinical_ai import CLINICAL_SYSTEM_PROMPT, generate_local_clinical_response
 
 load_dotenv()
 
@@ -272,16 +274,11 @@ def generate_stage_context():
     return "No MRI scan has been uploaded yet."
 
 def generate_chatbot_response(user_message):
-    system_prompt = """You are a professional, compassionate medical AI assistant specialising in Alzheimer's disease.
-Rules:
-- NEVER provide a final medical diagnosis.
-- Always recommend consulting a qualified neurologist.
-- Be structured, clear, and calm.
-- Do not fabricate statistics.
-Respond using markdown headings (##), bullet points, and bold text where appropriate."""
-
     stage_context = generate_stage_context()
     chat_sess     = get_or_create_chat_session()
+    current_stage = session.get('stage', 'NonDemented')
+    current_conf  = session.get('confidence', 90.0)
+    current_probs = session.get('all_probs')
 
     history = []
     if chat_sess:
@@ -291,47 +288,51 @@ Respond using markdown headings (##), bullet points, and bold text where appropr
         for m in reversed(msgs):
             history.append({"role": m.role, "content": m.content})
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "system", "content": stage_context},
-        *history,
-        {"role": "user", "content": user_message}
-    ]
+    reply = None
+    if client and USE_GROQ:
+        messages = [
+            {"role": "system", "content": CLINICAL_SYSTEM_PROMPT},
+            {"role": "system", "content": stage_context},
+            *history,
+            {"role": "user", "content": user_message}
+        ]
+        try:
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.5,
+                max_tokens=1024
+            )
+            reply = completion.choices[0].message.content.strip()
+        except Exception as e:
+            err_str = str(e).lower()
+            if "rate_limit" in err_str or "429" in err_str:
+                print("Notice: Groq API rate limit reached, falling back to local clinical knowledge engine.")
+            elif "auth" in err_str or "401" in err_str or "key" in err_str:
+                print("Notice: Groq API key unauthorized or unconfigured, utilizing local clinical knowledge engine.")
+            else:
+                print(f"Notice: Groq service communication issue ({e}), switching to local clinical knowledge engine.")
+            reply = None
 
-    try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.6,
-            max_tokens=1024
+    if not reply:
+        # High quality offline clinical knowledge fallback
+        reply = generate_local_clinical_response(
+            user_message=user_message,
+            stage=current_stage,
+            confidence=current_conf,
+            all_probs=current_probs
         )
-        reply = completion.choices[0].message.content.strip()
-        if chat_sess:
+
+    if chat_sess:
+        try:
             db.session.add(ChatMessage(chat_session_id=chat_sess.id, role='user',      content=user_message))
             db.session.add(ChatMessage(chat_session_id=chat_sess.id, role='assistant', content=reply))
             db.session.commit()
-        return reply
-    except Exception as e:
-        print("Groq error:", e)
-        # Local fallback response when external chat service fails
-        advice = stage_info.get(session.get('stage'), '')
-        fallback = (
-            "## Assistant\n\n"
-            "**Note:** The external chatbot service is currently unavailable.\n\n"
-            f"**Context:** {stage_context}\n\n"
-            "**Summary:** I can provide general, non-diagnostic guidance based on the MRI stage above.\n\n"
-            f"{advice}\n\n"
-            "**Recommendations:**\n"
-            "- Do not treat this as a medical diagnosis.\n"
-            "- Consult a qualified neurologist for detailed assessment and next steps.\n"
-            "- If symptoms are worsening, seek immediate medical attention.\n\n"
-            "If you'd like, try re-sending your message later or upload a clearer scan."
-        )
-        if chat_sess:
-            db.session.add(ChatMessage(chat_session_id=chat_sess.id, role='user',      content=user_message))
-            db.session.add(ChatMessage(chat_session_id=chat_sess.id, role='assistant', content=fallback))
-            db.session.commit()
-        return fallback
+        except Exception as db_err:
+            db.session.rollback()
+            print("Failed to record chat history:", db_err)
+
+    return reply
 
 # ==============================
 # Routes — Auth
