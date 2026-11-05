@@ -11,13 +11,11 @@ from werkzeug.security import check_password_hash
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['WTF_CSRF_ENABLED'] = False
     with app.app_context():
         db.create_all()
         yield app.test_client()
         db.session.remove()
-        db.drop_all()
 
 
 def test_security_headers_present(client):
@@ -74,34 +72,34 @@ def test_password_length_boundary_enforcement(client):
     # Short password (< 8 chars)
     resp_short = client.post('/register', data={
         'name': 'Short Tester',
-        'email': 'short@neuroscan.org',
+        'email': 'short_sec@neuroscan.org',
         'password': 'short'
     }, follow_redirects=False)
     assert resp_short.status_code == 302
     with app.app_context():
-        assert User.query.filter_by(email='short@neuroscan.org').first() is None
+        assert User.query.filter_by(email='short_sec@neuroscan.org').first() is None
 
     # Excessively long password (> 128 chars) to prevent DoS via bcrypt/scrypt work factor
     long_pass = 'A' * 130
     resp_long = client.post('/register', data={
         'name': 'Long Tester',
-        'email': 'long@neuroscan.org',
+        'email': 'long_sec@neuroscan.org',
         'password': long_pass
     }, follow_redirects=False)
     assert resp_long.status_code == 302
     with app.app_context():
-        assert User.query.filter_by(email='long@neuroscan.org').first() is None
+        assert User.query.filter_by(email='long_sec@neuroscan.org').first() is None
 
 
 def test_session_cookie_security_attributes(client):
     """Verify session cookies enforce HttpOnly and SameSite attributes."""
     client.post('/register', data={
         'name': 'Cookie Security',
-        'email': 'cookie@neuroscan.org',
+        'email': 'cookie_sec@neuroscan.org',
         'password': 'SecurePassword2026!'
     })
     resp = client.post('/login', data={
-        'email': 'cookie@neuroscan.org',
+        'email': 'cookie_sec@neuroscan.org',
         'password': 'SecurePassword2026!'
     })
     cookie_header = resp.headers.get('Set-Cookie', '')

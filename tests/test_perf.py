@@ -16,7 +16,6 @@ from chatbot.generate_reports import generate_report_stream
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['WTF_CSRF_ENABLED'] = False
     with app.app_context():
         db.create_all()
@@ -26,7 +25,6 @@ def client():
             conn.commit()
         yield app.test_client()
         db.session.remove()
-        db.drop_all()
 
 
 def test_database_composite_index_exists(client):

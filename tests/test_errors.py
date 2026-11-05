@@ -11,13 +11,11 @@ from chatbot.logging_config import log_clinical_event
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['WTF_CSRF_ENABLED'] = False
     with app.app_context():
         db.create_all()
         yield app.test_client()
         db.session.remove()
-        db.drop_all()
 
 
 def test_404_html_error_page(client):
@@ -56,8 +54,8 @@ def test_400_json_error_response(client):
 def test_403_json_error_response(client):
     """Verify cross-user scan access via API returns structured 403 JSON error."""
     with app.app_context():
-        user1 = User(name='Clinician One', email='c1@neuroscan.org', password='hash1Password!')
-        user2 = User(name='Clinician Two', email='c2@neuroscan.org', password='hash2Password!')
+        user1 = User(name='Clinician One', email='c1_err@neuroscan.org', password='hash1Password!')
+        user2 = User(name='Clinician Two', email='c2_err@neuroscan.org', password='hash2Password!')
         db.session.add_all([user1, user2])
         db.session.commit()
 
@@ -72,7 +70,6 @@ def test_403_json_error_response(client):
         scan_id = scan.id
         user2_id = user2.id
 
-    # Clinician Two attempts to query Clinician One's scan
     with client.session_transaction() as sess:
         sess['user_id'] = user2_id
         sess['user_name'] = 'Clinician Two'
@@ -87,7 +84,7 @@ def test_403_json_error_response(client):
 def test_api_scans_retrieval(client):
     """Verify /api/scans returns structured JSON array for authenticated user."""
     with app.app_context():
-        u = User(name='API Doctor', email='doctor@neuroscan.org', password='testPassword123!')
+        u = User(name='API Doctor', email='doctor_err@neuroscan.org', password='testPassword123!')
         db.session.add(u)
         db.session.commit()
         u_id = u.id

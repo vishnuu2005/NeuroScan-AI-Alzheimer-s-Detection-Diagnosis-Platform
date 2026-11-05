@@ -14,13 +14,11 @@ from chatbot.logging_config import log_clinical_event
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['WTF_CSRF_ENABLED'] = False
     with app.app_context():
         db.create_all()
         yield app.test_client()
         db.session.remove()
-        db.drop_all()
 
 
 def _create_mock_mri_png():
@@ -41,7 +39,7 @@ def test_full_clinical_platform_regression(client):
     4. Multi-class prediction verification and database persistence
     5. Interactive clinical chat consultation
     6. In-memory PDF report generation and download
-    7. JSON REST API query for scan history
+    7. REST API scan history query
     8. Clinical event audit trail execution
     9. Session logout and unauthorized guard enforcement
     """
@@ -53,14 +51,14 @@ def test_full_clinical_platform_regression(client):
     # 2. Clinician Registration
     reg_resp = client.post('/register', data={
         'name': 'Dr. Marcus Vance',
-        'email': 'm.vance@neuroscan-clinic.org',
+        'email': 'm.vance_reg@neuroscan-clinic.org',
         'password': 'ClinicalPassword2026!'
     }, follow_redirects=True)
     assert reg_resp.status_code == 200
 
     # 3. Authentication Login
     login_resp = client.post('/login', data={
-        'email': 'm.vance@neuroscan-clinic.org',
+        'email': 'm.vance_reg@neuroscan-clinic.org',
         'password': 'ClinicalPassword2026!'
     }, follow_redirects=True)
     assert login_resp.status_code == 200
@@ -77,7 +75,7 @@ def test_full_clinical_platform_regression(client):
 
     # 5. Verify database scan record
     with app.app_context():
-        user = User.query.filter_by(email='m.vance@neuroscan-clinic.org').first()
+        user = User.query.filter_by(email='m.vance_reg@neuroscan-clinic.org').first()
         assert user is not None
         user_id = user.id
         scans = Scan.query.filter_by(user_id=user.id).all()
