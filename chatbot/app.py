@@ -65,9 +65,12 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "neuroscan_secret_2024")
+app.config['SESSION_COOKIE_NAME'] = 'neuroscan_session'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
+app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', '0').lower() in ('1', 'true', 'yes')
+app.config['PERMANENT_SESSION_LIFETIME'] = int(os.getenv('PERMANENT_SESSION_LIFETIME', '86400'))
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 app.config['UPLOAD_FOLDER'] = UPLOADS_DIR
 app.config['REPORTS_FOLDER'] = REPORTS_DIR
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
