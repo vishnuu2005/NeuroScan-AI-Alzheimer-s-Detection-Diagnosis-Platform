@@ -428,7 +428,7 @@ def chat_history_view(session_id):
 @login_required
 def index():
     user = current_user()
-    filename = prediction = confidence = all_probs = warning = description = risk = None
+    filename = prediction = confidence = all_probs = warning = description = risk = elapsed_ms = model_version = None
 
     if request.method == 'POST':
         if 'file' not in request.files or not request.files['file'].filename:
@@ -474,6 +474,7 @@ def index():
 
             description = stage_info.get(prediction, '')
             risk        = stage_risk.get(prediction, 'unknown')
+            model_version = f"ResNet18-{in_channels}ch"
 
             scan = Scan(
                 user_id       = user.id,
@@ -482,7 +483,7 @@ def index():
                 all_probs     = json.dumps(all_probs),
                 warning       = warning,
                 processing_ms = elapsed_ms,
-                model_version = f"ResNet18-{in_channels}ch"
+                model_version = model_version
             )
             db.session.add(scan)
             db.session.commit()
@@ -501,7 +502,8 @@ def index():
     return render_template('index.html',
         current_user=user,
         filename=filename, prediction=prediction, confidence=confidence,
-        all_probs=all_probs, warning=warning, description=description, risk=risk)
+        all_probs=all_probs, warning=warning, description=description, risk=risk,
+        elapsed_ms=elapsed_ms, model_version=model_version)
 
 @app.route('/chat', methods=['POST'])
 @login_required

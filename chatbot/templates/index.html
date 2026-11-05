@@ -523,6 +523,13 @@
             </div>
             {% endif %}
 
+            {% if elapsed_ms %}
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem;">
+              <span><i class="fas fa-bolt" style="color: var(--accent);"></i> Latency: <strong style="color: var(--text);">{{ elapsed_ms }} ms</strong></span>
+              <span><i class="fas fa-microchip"></i> Engine: <strong style="color: var(--text);">{{ model_version or 'ResNet18' }}</strong></span>
+            </div>
+            {% endif %}
+
             <div class="disclaimer-text">Based on a single 2D MRI slice · Clinical diagnosis requires neurologist evaluation</div>
           </div>
 
