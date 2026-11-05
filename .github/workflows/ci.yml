@@ -1,0 +1,46 @@
+name: NeuroScan AI CI
+
+on:
+  push:
+    branches: [ main, "feature/**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Verify Model Weights File Integrity
+        run: |
+          python -c "import os; print('Models dir contents:', os.listdir('models') if os.path.exists('models') else 'None')"
+
+      - name: Run Pytest Test Suite
+        env:
+          USE_GROQ: "0"
+          FLASK_SECRET_KEY: "ci_testing_secret_key"
+          PREDICTION_THRESHOLD: "0.30"
+          MPLCONFIGDIR: ".matplotlib_cache"
+        run: |
+          pytest -v --cov=chatbot --cov-report=term-missing
