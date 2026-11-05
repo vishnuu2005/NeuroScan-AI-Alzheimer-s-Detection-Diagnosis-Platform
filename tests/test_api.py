@@ -142,6 +142,14 @@ def test_chat_session_deletion_and_cascade(api_users):
         assert ChatSession.query.get(sess_id) is None
         assert ChatMessage.query.get(msg_id) is None
 
+def test_chat_session_not_found(api_users):
+    u1_id, _ = api_users
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess['user_id'] = u1_id
+    resp_missing = client.post('/delete_chat/777777')
+    assert resp_missing.status_code == 404
+
 def test_malformed_requests_and_unsupported_methods(api_users):
     u1_id, _ = api_users
     client = app.test_client()
