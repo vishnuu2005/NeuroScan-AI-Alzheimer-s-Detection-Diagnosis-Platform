@@ -18,6 +18,11 @@ load_dotenv()
 
 groq_api_key = os.getenv("GROQ_API_KEY")
 USE_GROQ = os.getenv("USE_GROQ", "1").lower() in ("1", "true", "yes")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+try:
+    CHAT_HISTORY_LIMIT = max(1, min(50, int(os.getenv("CHAT_HISTORY_LIMIT", "10"))))
+except (ValueError, TypeError):
+    CHAT_HISTORY_LIMIT = 10
 client = None
 if USE_GROQ:
     if not groq_api_key:
@@ -176,13 +181,14 @@ def generate_stage_context():
     return "No MRI scan has been uploaded yet."
 
 def generate_chatbot_response(user_message):
-    system_prompt = """You are a professional, compassionate medical AI assistant specialising in Alzheimer's disease.
-Rules:
-- NEVER provide a final medical diagnosis.
-- Always recommend consulting a qualified neurologist.
-- Be structured, clear, and calm.
-- Do not fabricate statistics.
-Respond using markdown headings (##), bullet points, and bold text where appropriate."""
+    system_prompt = """You are NeuroScan AI Assistant, a compassionate, medically-informed AI assistant specialising in Alzheimer's disease education and cognitive health support.
+
+Core Clinical Guidelines:
+1. Non-Diagnostic Role: You are an educational decision-support tool, NOT a replacement for a physician. Never state or imply a definitive diagnosis.
+2. Clinical Escalation: Always advise consulting a board-certified neurologist or geriatric specialist for comprehensive evaluations (e.g. MMSE, MoCA, clinical biomarkers).
+3. Red-Flag Symptoms: If the user mentions acute sudden confusion, severe head trauma, fainting, or acute behavioral distress, advise immediate medical emergency attention.
+4. Tone & Style: Be empathetic, clear, calm, and objective. Avoid medical jargon when plain language suffices.
+5. Formatting: Use structured Markdown headers (##), bold key concepts, and concise bullet points."""
 
     stage_context = generate_stage_context()
     chat_sess     = get_or_create_chat_session()
@@ -191,7 +197,7 @@ Respond using markdown headings (##), bullet points, and bold text where appropr
     if chat_sess:
         msgs = ChatMessage.query.filter_by(chat_session_id=chat_sess.id)\
                                 .order_by(ChatMessage.created_at.desc())\
-                                .limit(10).all()
+                                .limit(CHAT_HISTORY_LIMIT).all()
         for m in reversed(msgs):
             history.append({"role": m.role, "content": m.content})
 
@@ -203,8 +209,10 @@ Respond using markdown headings (##), bullet points, and bold text where appropr
     ]
 
     try:
+        if client is None:
+            raise RuntimeError("Groq client is not configured; using offline fallback.")
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=GROQ_MODEL,
             messages=messages,
             temperature=0.6,
             max_tokens=1024
@@ -217,19 +225,41 @@ Respond using markdown headings (##), bullet points, and bold text where appropr
         return reply
     except Exception as e:
         print("Groq error:", e)
-        # Local fallback response when external chat service fails
+        # Local intelligent fallback response when external chat service is unavailable
         advice = stage_info.get(session.get('stage'), '')
+        user_msg_lower = user_message.lower()
+
+        topic_notes = []
+        if any(w in user_msg_lower for w in ("diet", "food", "nutrition", "eat")):
+            topic_notes.append(
+                "**Diet & Nutrition Note:** Research strongly supports the MIND and Mediterranean diets "
+                "(rich in leafy green vegetables, berries, whole grains, nuts, and omega-3 fatty acids) "
+                "in supporting cognitive health."
+            )
+        if any(w in user_msg_lower for w in ("exercise", "fitness", "activity", "lifestyle")):
+            topic_notes.append(
+                "**Physical Activity Note:** Regular aerobic exercise (aiming for 150 min/week) and consistent, "
+                "restful sleep help maintain cerebral blood flow and glymphatic clearance."
+            )
+        if any(w in user_msg_lower for w in ("memory", "brain", "puzzle", "games")):
+            topic_notes.append(
+                "**Cognitive Stimulation Note:** Engaging in structured mental activities, bilingual learning, "
+                "musical practice, and social interaction aids in building cognitive reserve."
+            )
+
+        extra_guidance = "\n\n".join(topic_notes)
+        if extra_guidance:
+            extra_guidance = "\n\n" + extra_guidance
+
         fallback = (
-            "## Assistant\n\n"
-            "**Note:** The external chatbot service is currently unavailable.\n\n"
-            f"**Context:** {stage_context}\n\n"
-            "**Summary:** I can provide general, non-diagnostic guidance based on the MRI stage above.\n\n"
-            f"{advice}\n\n"
-            "**Recommendations:**\n"
-            "- Do not treat this as a medical diagnosis.\n"
-            "- Consult a qualified neurologist for detailed assessment and next steps.\n"
-            "- If symptoms are worsening, seek immediate medical attention.\n\n"
-            "If you'd like, try re-sending your message later or upload a clearer scan."
+            "## Assistant (Offline Guidance)\n\n"
+            "**Note:** Operating in offline clinical guidance mode.\n\n"
+            f"**Scan Context:** {stage_context}\n\n"
+            f"**Clinical Summary:** {advice}{extra_guidance}\n\n"
+            "**Key Recommendations:**\n"
+            "- This information is for educational purposes and is not a medical diagnosis.\n"
+            "- Consult a board-certified neurologist or geriatric specialist for comprehensive cognitive assessment.\n"
+            "- If acute confusion or sudden behavioral changes occur, seek immediate medical evaluation."
         )
         if chat_sess:
             db.session.add(ChatMessage(chat_session_id=chat_sess.id, role='user',      content=user_message))
