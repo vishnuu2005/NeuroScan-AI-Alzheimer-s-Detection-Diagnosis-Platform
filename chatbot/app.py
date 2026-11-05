@@ -1,5 +1,7 @@
 import os
 import json
+import uuid
+from .validators import validate_image_extension
 from datetime import datetime
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file, flash
@@ -38,8 +40,14 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "neuroscan_secret_2024")
 app.config['UPLOAD_FOLDER'] = 'static/uploads/'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///neuroscan.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 
 db = SQLAlchemy(app)
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    flash("The uploaded file exceeds the 16 MB size limit.", "error")
+    return redirect(request.referrer or url_for('index'))
 
 # ==============================
 # Database Models
@@ -321,10 +329,18 @@ def index():
 
     if request.method == 'POST':
         if 'file' not in request.files or request.files['file'].filename == '':
+            flash('Please select an MRI scan file to upload.', 'error')
             return redirect(request.url)
         file = request.files['file']
+
+        is_valid_ext, ext_err = validate_image_extension(file.filename)
+        if not is_valid_ext:
+            flash(ext_err, 'error')
+            return redirect(request.url)
+
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        filename_secure = secure_filename(file.filename)
+        orig_name = secure_filename(file.filename) or "scan.jpg"
+        filename_secure = f"{uuid.uuid4().hex[:10]}_{orig_name}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename_secure)
         file.save(filepath)
         filename = filename_secure
