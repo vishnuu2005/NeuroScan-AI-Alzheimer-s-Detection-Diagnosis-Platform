@@ -380,6 +380,7 @@
         <div class="section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px"></i>Recent Scans</div>
       </div>
       {% if scans %}
+      <div class="table-responsive" style="overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%;">
       <table>
         <thead>
           <tr>
@@ -425,6 +426,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
       {% else %}
       <div class="empty-state">
         <i class="fas fa-brain"></i>
