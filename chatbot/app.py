@@ -658,6 +658,28 @@ def serve_upload(filename):
     return redirect(url_for('static', filename='uploads/' + safe_name), code=302)
 
 # ==============================
+# Security Middleware (OWASP)
+# ==============================
+@app.after_request
+def set_security_headers(response):
+    """Enforces essential OWASP security headers on all HTTP responses."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self';"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    return response
+
+# ==============================
 # Run
 # ==============================
 if __name__ == '__main__':
