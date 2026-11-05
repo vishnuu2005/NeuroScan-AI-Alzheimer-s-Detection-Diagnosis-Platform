@@ -58,10 +58,34 @@ app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "neuroscan_secret_2024")
 app.config['UPLOAD_FOLDER'] = UPLOADS_DIR
 app.config['REPORTS_FOLDER'] = REPORTS_DIR
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///neuroscan.db'
+# Database Configuration - Robust path resolution
+custom_db_uri = os.getenv("SQLALCHEMY_DATABASE_URI")
+if custom_db_uri:
+    app.config['SQLALCHEMY_DATABASE_URI'] = custom_db_uri
+else:
+    local_inst = os.path.join(BASE_DIR, 'instance')
+    root_inst = os.path.join(os.path.dirname(BASE_DIR), 'instance')
+    
+    db_file = None
+    for cand in [os.path.join(local_inst, 'neuroscan.db'), os.path.join(root_inst, 'neuroscan.db')]:
+        if os.path.exists(cand) and os.path.getsize(cand) > 0:
+            db_file = cand
+            break
+            
+    if not db_file:
+        os.makedirs(local_inst, exist_ok=True)
+        db_file = os.path.join(local_inst, 'neuroscan.db')
+        
+    db_uri_path = os.path.abspath(db_file).replace('\\', '/')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_uri_path}'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Ensure database tables exist automatically on application import
+with app.app_context():
+    db.create_all()
 
 # ==============================
 # Database Models
