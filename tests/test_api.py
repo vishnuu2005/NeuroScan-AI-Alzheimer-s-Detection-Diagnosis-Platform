@@ -100,6 +100,16 @@ def test_scan_deletion_and_ownership(api_users):
     with app.app_context():
         assert Scan.query.get(scan_id) is None
 
+def test_scan_boundary_conditions(api_users):
+    u1_id, _ = api_users
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess['user_id'] = u1_id
+
+    # Non-existent scan returns 404
+    resp_missing = client.post('/delete_scan/888888')
+    assert resp_missing.status_code == 404
+
 def test_chat_session_deletion_and_cascade(api_users):
     u1_id, u2_id = api_users
     client = app.test_client()
