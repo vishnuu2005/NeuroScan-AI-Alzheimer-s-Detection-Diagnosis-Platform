@@ -1,6 +1,9 @@
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+
+def get_utc_now():
+    return datetime.now(timezone.utc)
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file, flash
 from PIL import Image
@@ -49,26 +52,36 @@ class User(db.Model):
     name          = db.Column(db.String(100), nullable=False)
     email         = db.Column(db.String(120), unique=True, nullable=False)
     password      = db.Column(db.String(200), nullable=False)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    scans         = db.relationship('Scan', backref='user', lazy=True)
-    chat_sessions = db.relationship('ChatSession', backref='user', lazy=True)
+    created_at    = db.Column(db.DateTime, default=get_utc_now)
+    scans         = db.relationship('Scan', backref='user', lazy=True, cascade='all, delete-orphan')
+    chat_sessions = db.relationship('ChatSession', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Scan(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
-    user_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     prediction  = db.Column(db.String(50), nullable=False)
     confidence  = db.Column(db.Float, nullable=False)
     all_probs   = db.Column(db.Text, nullable=False)
     warning     = db.Column(db.String(200))
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at  = db.Column(db.DateTime, default=get_utc_now, index=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "prediction": self.prediction,
+            "confidence": self.confidence,
+            "warning": self.warning,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
 
 class ChatSession(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
-    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    scan_id    = db.Column(db.Integer, db.ForeignKey('scan.id'), nullable=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    scan_id    = db.Column(db.Integer, db.ForeignKey('scan.id'), nullable=True, index=True)
     scan_stage = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    messages   = db.relationship('ChatMessage', backref='chat_session', lazy=True)
+    created_at = db.Column(db.DateTime, default=get_utc_now, index=True)
+    messages   = db.relationship('ChatMessage', backref='chat_session', lazy=True, cascade='all, delete-orphan')
 
     @property
     def message_count(self):
@@ -76,10 +89,10 @@ class ChatSession(db.Model):
 
 class ChatMessage(db.Model):
     id              = db.Column(db.Integer, primary_key=True)
-    chat_session_id = db.Column(db.Integer, db.ForeignKey('chat_session.id'), nullable=False)
+    chat_session_id = db.Column(db.Integer, db.ForeignKey('chat_session.id'), nullable=False, index=True)
     role            = db.Column(db.String(20), nullable=False)
     content         = db.Column(db.Text, nullable=False)
-    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at      = db.Column(db.DateTime, default=get_utc_now, index=True)
 
 # ==============================
 # Auth Helpers
