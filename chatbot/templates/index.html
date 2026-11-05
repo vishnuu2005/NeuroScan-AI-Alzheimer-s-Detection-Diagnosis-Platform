@@ -544,48 +544,62 @@
           </div>
 
           <!-- Probability chart -->
-          {% if all_probs %}
+          {% if chart_dataset and chart_dataset.values %}
           <div class="chart-card">
             <div class="chart-title">Class Probability Distribution</div>
             <canvas id="probChart" height="160"></canvas>
           </div>
+          <script type="application/json" id="chart-data">
+            {{ chart_dataset | tojson | safe }}
+          </script>
           <script>
-            const labels = {{ all_probs.keys()|list|tojson }};
-            const data = {{ all_probs.values()|list|tojson }};
-            const maxVal = Math.max(...data);
-            const ctx = document.getElementById('probChart').getContext('2d');
-            new Chart(ctx, {
-              type: 'bar',
-              data: {
-                labels: labels,
-                datasets: [{
-                  data: data,
-                  backgroundColor: data.map(v => v === maxVal
-                    ? 'rgba(14,165,233,0.7)'
-                    : 'rgba(30,45,69,0.8)'),
-                  borderColor: data.map(v => v === maxVal
-                    ? 'rgba(56,189,248,1)'
-                    : 'rgba(30,45,69,1)'),
-                  borderWidth: 1,
-                  borderRadius: 6,
-                }]
-              },
-              options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: {
-                    beginAtZero: true, max: 100,
-                    ticks: { color: '#64748b', font: { size: 10 } },
-                    grid: { color: 'rgba(30,45,69,0.5)' }
+            (function() {
+              const dataEl = document.getElementById('chart-data');
+              if (!dataEl) return;
+              try {
+                const chartConfig = JSON.parse(dataEl.textContent);
+                const ctx = document.getElementById('probChart').getContext('2d');
+                new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                    labels: chartConfig.display_labels,
+                    datasets: [{
+                      data: chartConfig.values,
+                      backgroundColor: chartConfig.bg_colors,
+                      borderColor: chartConfig.border_colors,
+                      borderWidth: 1.5,
+                      borderRadius: 6,
+                    }]
                   },
-                  x: {
-                    ticks: { color: '#64748b', font: { size: 10 } },
-                    grid: { display: false }
+                  options: {
+                    responsive: true,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            return ' ' + context.parsed.y.toFixed(2) + '% probability';
+                          }
+                        }
+                      }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true, max: 100,
+                        ticks: { color: '#64748b', font: { size: 10 }, callback: v => v + '%' },
+                        grid: { color: 'rgba(30,45,69,0.5)' }
+                      },
+                      x: {
+                        ticks: { color: '#94a3b8', font: { size: 10 } },
+                        grid: { display: false }
+                      }
+                    }
                   }
-                }
+                });
+              } catch (e) {
+                console.error("Failed to render clinical probability chart:", e);
               }
-            });
+            })();
           </script>
           {% endif %}
 
