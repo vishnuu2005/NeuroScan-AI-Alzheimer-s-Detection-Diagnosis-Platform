@@ -2,6 +2,7 @@ import time
 import re
 import os
 import json
+import uuid
 
 # Ensure Matplotlib uses a writable local cache in all environments
 if 'MPLCONFIGDIR' not in os.environ:
@@ -24,9 +25,11 @@ from flask_sqlalchemy import SQLAlchemy
 try:
     from .inference import load_model, predict, transform_image
     from .generate_reports import generate_report
+    from .validators import validate_mri_image, allowed_file, ALLOWED_EXTENSIONS
 except ImportError:
     from inference import load_model, predict, transform_image
     from generate_reports import generate_report
+    from validators import validate_mri_image, allowed_file, ALLOWED_EXTENSIONS
 
 load_dotenv()
 
@@ -63,6 +66,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 app.config['UPLOAD_FOLDER'] = UPLOADS_DIR
 app.config['REPORTS_FOLDER'] = REPORTS_DIR
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 # Database Configuration - Robust path resolution
 custom_db_uri = os.getenv("SQLALCHEMY_DATABASE_URI")
 if custom_db_uri:
@@ -423,14 +427,33 @@ def index():
     filename = prediction = confidence = all_probs = warning = description = risk = None
 
     if request.method == 'POST':
-        if 'file' not in request.files or request.files['file'].filename == '':
+        if 'file' not in request.files or not request.files['file'].filename:
+            flash("Please select an MRI image file to upload.", "error")
             return redirect(request.url)
         file = request.files['file']
+
+        if not allowed_file(file.filename):
+            flash(f"Unsupported file format. Permitted types: {', '.join(sorted(ALLOWED_EXTENSIONS)).upper()}", "error")
+            return redirect(request.url)
+
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        filename_secure = secure_filename(file.filename)
+        unique_prefix = uuid.uuid4().hex[:12]
+        filename_secure = f"{unique_prefix}_{secure_filename(file.filename)}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename_secure)
         file.save(filepath)
         filename = filename_secure
+
+        # Deep validation of image header and dimensions
+        is_valid, validation_info = validate_mri_image(filepath)
+        if not is_valid:
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except Exception:
+                    pass
+            flash(validation_info, "error")
+            return redirect(request.url)
+
         try:
             image_tensor = transform_image(filepath, in_channels=getattr(alz_model, 'in_channels', 3))   # ✅ uses inference.py's version
             prediction, confidence, all_probs, warning = predict(alz_model, image_tensor, classes)
