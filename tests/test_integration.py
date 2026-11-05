@@ -245,6 +245,30 @@ def test_history_pagination_and_deletion_flow():
             db.session.delete(u)
         db.session.commit()
 
+def test_history_empty_state(auth_client_factory=None):
+    app.config['TESTING'] = True
+    client = app.test_client()
+    with app.app_context():
+        email = f"empty_{uuid.uuid4().hex[:8]}@hospital.org"
+        user = User(name="Empty Tester", email=email, password="Password123!")
+        db.session.add(user)
+        db.session.commit()
+        uid = user.id
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = uid
+
+    resp = client.get('/history')
+    assert resp.status_code == 200
+    html = resp.data.decode('utf-8')
+    assert "No scans" in html or "Scan History" in html
+
+    with app.app_context():
+        u = User.query.get(uid)
+        if u:
+            db.session.delete(u)
+        db.session.commit()
+
 def test_logout_and_unauthorized_redirection():
     app.config['TESTING'] = True
     client = app.test_client()
