@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from .generate_reports import generate_report
+from .validators import validate_email, validate_password, validate_registration
 
 load_dotenv()
 
@@ -245,7 +246,13 @@ def login():
     if request.method == 'POST':
         email    = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
-        user     = User.query.filter_by(email=email).first()
+
+        is_valid_email, email_err = validate_email(email)
+        if not is_valid_email:
+            flash(email_err or 'Invalid email format.', 'error')
+            return render_template('login.html')
+
+        user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
             session.clear()
             session['user_id']   = user.id
@@ -259,12 +266,16 @@ def register():
     name     = request.form.get('name', '').strip()
     email    = request.form.get('email', '').strip().lower()
     password = request.form.get('password', '')
+
+    is_valid, err_msg = validate_registration(name, email, password)
+    if not is_valid:
+        flash(err_msg, 'error')
+        return redirect(url_for('login'))
+
     if User.query.filter_by(email=email).first():
         flash('Email already registered.', 'error')
         return redirect(url_for('login'))
-    if len(password) < 6:
-        flash('Password must be at least 6 characters.', 'error')
-        return redirect(url_for('login'))
+
     user = User(name=name, email=email, password=generate_password_hash(password))
     db.session.add(user)
     db.session.commit()
