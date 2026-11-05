@@ -23,15 +23,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 
 try:
-    from .inference import load_model, predict, transform_image
-    from .generate_reports import generate_report
+    from .inference import load_model, predict, transform_image, warmup_model
+    from .generate_reports import generate_report, generate_report_stream
     from .validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
     from .formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
     from .clinical_ai import CLINICAL_SYSTEM_PROMPT, generate_local_clinical_response
     from .logging_config import configure_logging, log_clinical_event
 except ImportError:
-    from inference import load_model, predict, transform_image
-    from generate_reports import generate_report
+    from inference import load_model, predict, transform_image, warmup_model
+    from generate_reports import generate_report, generate_report_stream
     from validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
     from formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
     from clinical_ai import CLINICAL_SYSTEM_PROMPT, generate_local_clinical_response
@@ -660,16 +660,14 @@ def download_report():
         return 'No prediction found. Please upload a scan first.', 400
 
     unique_suffix = f"{user.id}_{uuid.uuid4().hex[:8]}"
-    report_path = os.path.join(app.config['REPORTS_FOLDER'], f"report_{unique_suffix}.pdf")
-    generate_report(
+    stream = generate_report_stream(
         prediction=stage,
         confidence=confidence,
         all_probs=all_probs,
-        output_path=report_path,
         model_version=session.get('model_version', 'ResNet18-Adaptive'),
         reference_id=f"NS-{unique_suffix.upper()}"
     )
-    return send_file(report_path, as_attachment=True,
+    return send_file(stream, as_attachment=True,
                      download_name=f'neuroscan_report_{stage}.pdf',
                      mimetype='application/pdf')
 
@@ -680,17 +678,15 @@ def download_report_by_id(scan_id):
     scan = Scan.query.get_or_404(scan_id)
     if scan.user_id != user.id:
         return 'Unauthorized', 403
-    all_probs   = json.loads(scan.all_probs)
-    report_path = os.path.join(app.config['REPORTS_FOLDER'], f'report_{scan.id}_{scan.user_id}.pdf')
-    generate_report(
+    all_probs = json.loads(scan.all_probs)
+    stream = generate_report_stream(
         prediction=scan.prediction,
         confidence=scan.confidence,
         all_probs=all_probs,
-        output_path=report_path,
         model_version=scan.model_version or "ResNet18-Adaptive",
         reference_id=f"NS-SCAN-{scan.id:06d}"
     )
-    return send_file(report_path, as_attachment=True,
+    return send_file(stream, as_attachment=True,
                      download_name=f'neuroscan_report_scan_{scan_id}.pdf',
                      mimetype='application/pdf')
 

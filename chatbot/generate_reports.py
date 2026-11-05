@@ -1,4 +1,5 @@
 import os
+import io
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -235,11 +236,14 @@ def make_page_decorator(accent_color, total_pages_ref):
 def generate_report(prediction: str,
                     confidence: float,
                     all_probs: dict,
-                    output_path: str,
+                    output_path,
                     model_version: str = "ResNet18-Adaptive",
-                    reference_id: str = None) -> str:
+                    reference_id: str = None):
 
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    if isinstance(output_path, str):
+        target_dir = os.path.dirname(os.path.abspath(output_path))
+        if target_dir:
+            os.makedirs(target_dir, exist_ok=True)
 
     stage  = STAGE_INFO.get(prediction, STAGE_INFO["Unknown / Low Confidence"])
     accent = stage["accent"]
@@ -597,6 +601,28 @@ def generate_report(prediction: str,
     # ── Build ─────────────────────────────────────────────────────────────────
     doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
     return output_path
+
+
+def generate_report_stream(prediction: str,
+                           confidence: float,
+                           all_probs: dict,
+                           model_version: str = "ResNet18-Adaptive",
+                           reference_id: str = None) -> io.BytesIO:
+    """
+    Builds the clinical PDF report directly in-memory and returns a seeked BytesIO buffer.
+    Eliminates disk I/O bottlenecks and temporary file cleanups during client report streaming.
+    """
+    buffer = io.BytesIO()
+    generate_report(
+        prediction=prediction,
+        confidence=confidence,
+        all_probs=all_probs,
+        output_path=buffer,
+        model_version=model_version,
+        reference_id=reference_id
+    )
+    buffer.seek(0)
+    return buffer
 
 
 # ── Quick test ────────────────────────────────────────────────────────────────
