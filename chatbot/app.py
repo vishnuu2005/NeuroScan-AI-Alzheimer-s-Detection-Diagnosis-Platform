@@ -89,9 +89,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 def init_db(application=app):
-    """Initialize database tables within application context."""
+    """Initialize database tables and run automatic migrations within application context."""
     with application.app_context():
         db.create_all()
+        # Light auto-migration for newly introduced metadata columns
+        try:
+            with db.engine.connect() as conn:
+                cols = [row[1] for row in conn.execute(db.text("PRAGMA table_info(scan)")).fetchall()]
+                if cols and 'processing_ms' not in cols:
+                    conn.execute(db.text("ALTER TABLE scan ADD COLUMN processing_ms FLOAT DEFAULT 0.0"))
+                if cols and 'model_version' not in cols:
+                    conn.execute(db.text("ALTER TABLE scan ADD COLUMN model_version VARCHAR(50) DEFAULT 'ResNet18-Adaptive'"))
+                conn.commit()
+        except Exception as e:
+            print("Auto-migration notice:", e)
 
 # Ensure database tables exist automatically on application import
 init_db(app)
