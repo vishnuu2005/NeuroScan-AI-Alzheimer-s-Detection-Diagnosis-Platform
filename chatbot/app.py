@@ -317,6 +317,9 @@ def login():
     if request.method == 'POST':
         email    = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
+        if not email or not password:
+            flash('Both email and password are required to sign in.', 'error')
+            return render_template('login.html'), 400
         user     = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
             session.clear()
