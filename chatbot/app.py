@@ -515,8 +515,10 @@ def reports():
 @login_required
 def history():
     user  = current_user()
-    scans = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).all()
-    return render_template('history.html', current_user=user, scans=scans)
+    page  = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 12, type=int)
+    pagination = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('history.html', current_user=user, scans=pagination.items, pagination=pagination)
 
 @app.route('/delete_scan/<int:scan_id>', methods=['POST'])
 @login_required
