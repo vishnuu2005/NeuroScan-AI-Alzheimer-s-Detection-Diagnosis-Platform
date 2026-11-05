@@ -1,0 +1,20 @@
+{% extends "errors/error_base.html" %}
+{% block title %}500 — Clinical System Diagnostic Interruption{% endblock %}
+{% block content %}
+<div class="error-badge" style="border-color: rgba(244, 63, 94, 0.3); background: rgba(244, 63, 94, 0.1); color: var(--accent-rose);">
+    <i class="fa-solid fa-server"></i> Diagnostic Core Interruption
+</div>
+<div class="error-code">500</div>
+<h1 class="error-title">Internal Server Error</h1>
+<p class="error-desc">
+    An unexpected exception occurred during diagnostic processing or inference evaluation. The incident has been recorded in the clinical audit trail for automated investigation.
+</p>
+<div class="actions-group">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+        <i class="fa-solid fa-house"></i> Return to Dashboard
+    </a>
+    <a href="javascript:location.reload()" class="btn btn-secondary">
+        <i class="fa-solid fa-rotate-right"></i> Retry Operation
+    </a>
+</div>
+{% endblock %}

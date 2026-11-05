@@ -1,0 +1,20 @@
+{% extends "errors/error_base.html" %}
+{% block title %}404 — Clinical Record Not Found{% endblock %}
+{% block content %}
+<div class="error-badge">
+    <i class="fa-solid fa-magnifying-glass"></i> Unresolved Record Locator
+</div>
+<div class="error-code">404</div>
+<h1 class="error-title">Clinical Resource Not Found</h1>
+<p class="error-desc">
+    {{ error_message or "The requested scan record, consultation session, or diagnostic endpoint could not be located in the current workspace registry." }}
+</p>
+<div class="actions-group">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+        <i class="fa-solid fa-house"></i> Return to Dashboard
+    </a>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-clock-rotate-left"></i> View Scan History
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "errors/error_base.html" %}
+{% block title %}403 — Clinical Authorization Denied{% endblock %}
+{% block content %}
+<div class="error-badge" style="border-color: rgba(244, 63, 94, 0.3); background: rgba(244, 63, 94, 0.1); color: var(--accent-rose);">
+    <i class="fa-solid fa-lock"></i> Strict Boundary Restriction
+</div>
+<div class="error-code">403</div>
+<h1 class="error-title">Access Forbidden</h1>
+<p class="error-desc">
+    {{ error_message or "You do not have clinical authorization to access or mutate this patient record. Diagnostic resources are restricted strictly to authenticated session owners." }}
+</p>
+<div class="actions-group">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+        <i class="fa-solid fa-house"></i> Return to Dashboard
+    </a>
+    <a href="{{ url_for('login') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-right-to-bracket"></i> Re-authenticate
+    </a>
+</div>
+{% endblock %}
