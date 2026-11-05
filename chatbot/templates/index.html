@@ -466,14 +466,14 @@
 
         <!-- Upload form -->
         <form method="POST" enctype="multipart/form-data" id="upload-form">
-          <div class="upload-zone" onclick="document.getElementById('file-input').click()">
-            <input type="file" id="file-input" name="file" accept="image/*" required
-                   onchange="document.getElementById('file-name').textContent = this.files[0]?.name || ''">
+          <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" name="file" accept=".png,.jpg,.jpeg,.webp,.tif,.tiff" required style="display:none">
             <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
             <div class="upload-text">Drop MRI scan here or <strong>browse</strong></div>
             <div class="selected-file" id="file-name"></div>
+            <div id="file-error" style="display:none; color:#f87171; font-size:0.75rem; margin-top:0.5rem;"></div>
           </div>
-          <button type="submit" class="btn-predict">
+          <button type="submit" class="btn-predict" id="btn-submit-scan">
             <i class="fas fa-search"></i> Analyse Scan
           </button>
         </form>
@@ -687,6 +687,80 @@
               <div class="msg-bubble bot-bubble">Chat cleared. How can I help you?</div>
             </div>`;
         });
+    }
+
+    // Drag and Drop & Client-side Validation
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileNameDisplay = document.getElementById('file-name');
+    const fileError = document.getElementById('file-error');
+    const MAX_SIZE_BYTES = 16 * 1024 * 1024;
+    const ALLOWED_EXTS = ['png', 'jpg', 'jpeg', 'webp', 'tif', 'tiff'];
+
+    function handleFile(file) {
+      if (!file) return false;
+      fileError.style.display = 'none';
+      fileError.textContent = '';
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!ALLOWED_EXTS.includes(ext)) {
+        fileError.textContent = 'Invalid file type. Supported: ' + ALLOWED_EXTS.join(', ').toUpperCase();
+        fileError.style.display = 'block';
+        fileNameDisplay.textContent = '';
+        fileInput.value = '';
+        return false;
+      }
+
+      if (file.size > MAX_SIZE_BYTES) {
+        fileError.textContent = 'File exceeds maximum 16MB limit (' + (file.size / (1024*1024)).toFixed(1) + 'MB).';
+        fileError.style.display = 'block';
+        fileNameDisplay.textContent = '';
+        fileInput.value = '';
+        return false;
+      }
+
+      const formattedSize = file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+        : (file.size / 1024).toFixed(1) + ' KB';
+
+      fileNameDisplay.textContent = `${file.name} (${formattedSize})`;
+      return true;
+    }
+
+    fileInput.addEventListener('change', function() {
+      if (this.files.length > 0) {
+        handleFile(this.files[0]);
+      }
+    });
+
+    if (dropZone) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.style.borderColor = 'var(--accent)';
+          dropZone.style.background = 'rgba(14,165,233,0.06)';
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.style.borderColor = 'var(--border)';
+          dropZone.style.background = 'transparent';
+        }, false);
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+          if (handleFile(files[0])) {
+            fileInput.files = files;
+          }
+        }
+      }, false);
     }
   </script>
 </body>
