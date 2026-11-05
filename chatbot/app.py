@@ -13,13 +13,18 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, s
 from PIL import Image
 import torch
 import torchvision.transforms as transforms
-from .inference import load_model, predict, transform_image   # import transform_image from inference
 from dotenv import load_dotenv
 from groq import Groq
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from .generate_reports import generate_report
+
+try:
+    from .inference import load_model, predict, transform_image
+    from .generate_reports import generate_report
+except ImportError:
+    from inference import load_model, predict, transform_image
+    from generate_reports import generate_report
 
 load_dotenv()
 
