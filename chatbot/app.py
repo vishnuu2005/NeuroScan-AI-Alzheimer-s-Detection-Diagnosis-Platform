@@ -1,5 +1,12 @@
 import os
 import json
+
+# Ensure Matplotlib uses a writable local cache in all environments
+if 'MPLCONFIGDIR' not in os.environ:
+    _mpl_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.matplotlib_cache')
+    os.makedirs(_mpl_dir, exist_ok=True)
+    os.environ['MPLCONFIGDIR'] = _mpl_dir
+
 from datetime import datetime
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file, flash
