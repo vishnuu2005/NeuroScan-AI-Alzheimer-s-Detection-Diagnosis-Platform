@@ -110,8 +110,8 @@ class User(db.Model):
     email         = db.Column(db.String(120), unique=True, nullable=False)
     password      = db.Column(db.String(200), nullable=False)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    scans         = db.relationship('Scan', backref='user', lazy=True)
-    chat_sessions = db.relationship('ChatSession', backref='user', lazy=True)
+    scans         = db.relationship('Scan', backref='user', lazy=True, cascade='all, delete-orphan')
+    chat_sessions = db.relationship('ChatSession', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Scan(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
@@ -128,7 +128,7 @@ class ChatSession(db.Model):
     scan_id    = db.Column(db.Integer, db.ForeignKey('scan.id'), nullable=True)
     scan_stage = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    messages   = db.relationship('ChatMessage', backref='chat_session', lazy=True)
+    messages   = db.relationship('ChatMessage', backref='chat_session', lazy=True, cascade='all, delete-orphan')
 
     @property
     def message_count(self):
@@ -418,7 +418,7 @@ def index():
         file.save(filepath)
         filename = filename_secure
         try:
-            image_tensor = transform_image(filepath)   # ✅ uses inference.py's version
+            image_tensor = transform_image(filepath, in_channels=getattr(alz_model, 'in_channels', 3))   # ✅ uses inference.py's version
             prediction, confidence, all_probs, warning = predict(alz_model, image_tensor, classes)
             description = stage_info.get(prediction, '')
             risk        = stage_risk.get(prediction, 'unknown')
