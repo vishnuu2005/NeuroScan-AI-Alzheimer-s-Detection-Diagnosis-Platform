@@ -109,14 +109,26 @@ def current_user():
 # Model Setup
 # ==============================
 classes = ["MildDemented", "ModerateDemented", "NonDemented", "VeryMildDemented"]
-# Resolve model path robustly: prefer configured absolute path, else fall back to project models folder
-possible_model_paths = [
-    "D:/AlzeigmersChatBot/AlzeigmersChatBot/models/resnet2d_alzheimers.pth",
-    os.path.join(os.path.dirname(__file__), "..", "models", "resnet2d_alzheimers.pth"),
-    os.path.join(os.getcwd(), "models", "resnet2d_alzheimers.pth"),
-    os.path.join(os.getcwd(), "AlzeigmersChatBot", "models", "resnet2d_alzheimers.pth"),
-    "models/resnet2d_alzheimers.pth"
+# Resolve model path robustly: prefer configured MODEL_PATH or best checkpoint
+custom_model_env = os.getenv("MODEL_PATH")
+possible_model_paths = []
+if custom_model_env:
+    possible_model_paths.append(custom_model_env)
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(base_dir)
+candidate_names = ["resnet2d_alzheimers_best.pth", "resnet2d_alzheimers.pth"]
+candidate_dirs = [
+    os.path.join(project_root, "models"),
+    os.path.join(os.getcwd(), "models"),
+    os.path.join(os.getcwd(), "AlzeigmersChatBot", "models"),
+    os.path.join(base_dir, "models"),
+    "models"
 ]
+for d in candidate_dirs:
+    for name in candidate_names:
+        possible_model_paths.append(os.path.join(d, name))
+
 model_path = None
 for p in possible_model_paths:
     p_norm = os.path.normpath(p)
@@ -124,7 +136,7 @@ for p in possible_model_paths:
         model_path = p_norm
         break
 if model_path is None:
-    raise FileNotFoundError("resnet2d_alzheimers.pth not found in expected locations.\n"
+    raise FileNotFoundError("ResNet checkpoint not found in expected locations.\n"
                             "Checked: " + ", ".join(possible_model_paths))
 alz_model = load_model(model_path, num_classes=len(classes))
 
