@@ -26,10 +26,12 @@ try:
     from .inference import load_model, predict, transform_image
     from .generate_reports import generate_report
     from .validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
+    from .formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
 except ImportError:
     from inference import load_model, predict, transform_image
     from generate_reports import generate_report
     from validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
+    from formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
 
 load_dotenv()
 
@@ -499,10 +501,14 @@ def index():
         finally:
             safe_remove(filepath)
 
+    chart_dataset = prepare_chart_dataset(all_probs, predicted_stage=prediction)
+    display_prediction = format_stage_label(prediction) if prediction else None
+
     return render_template('index.html',
         current_user=user,
-        filename=filename, prediction=prediction, confidence=confidence,
-        all_probs=all_probs, warning=warning, description=description, risk=risk,
+        filename=filename, prediction=prediction, display_prediction=display_prediction,
+        confidence=confidence, all_probs=all_probs, chart_dataset=chart_dataset,
+        warning=warning, description=description, risk=risk,
         elapsed_ms=elapsed_ms, model_version=model_version)
 
 @app.route('/chat', methods=['POST'])

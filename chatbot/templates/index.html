@@ -484,21 +484,21 @@
 
           <!-- Risk badge -->
           {% if risk == "low" %}
-            <span class="risk-badge risk-low">🟢 No Dementia Detected</span>
+            <span class="risk-badge risk-low"><i class="fas fa-shield-alt"></i> Low Risk · Non-Demented</span>
           {% elif risk == "early" %}
-            <span class="risk-badge risk-early">🟡 Very Early Stage</span>
+            <span class="risk-badge risk-early"><i class="fas fa-exclamation-triangle"></i> Early Risk · Very Mild Stage</span>
           {% elif risk == "mild" %}
-            <span class="risk-badge risk-mild">🟠 Mild Stage</span>
+            <span class="risk-badge risk-mild"><i class="fas fa-exclamation-circle"></i> Moderate Risk · Mild Stage</span>
           {% elif risk == "moderate" %}
-            <span class="risk-badge risk-moderate">🔴 Moderate Stage</span>
+            <span class="risk-badge risk-moderate"><i class="fas fa-radiation"></i> High Clinical Risk · Moderate Stage</span>
           {% else %}
-            <span class="risk-badge risk-unknown">⚪ Uncertain Result</span>
+            <span class="risk-badge risk-unknown"><i class="fas fa-question-circle"></i> Inconclusive · Neurological Review Required</span>
           {% endif %}
 
           <!-- Prediction card -->
           <div class="pred-card">
             <div class="pred-label">Predicted Classification</div>
-            <div class="pred-value">{{ prediction }}</div>
+            <div class="pred-value">{{ display_prediction or prediction }}</div>
 
             <div class="conf-row">
               <span class="conf-label">Confidence Score</span>
