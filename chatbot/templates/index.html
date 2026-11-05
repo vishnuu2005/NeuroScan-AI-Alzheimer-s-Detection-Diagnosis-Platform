@@ -501,14 +501,24 @@
             <div class="pred-value">{{ display_prediction or prediction }}</div>
 
             <div class="conf-row">
-              <span class="conf-label">Confidence Score</span>
+              <span class="conf-label">
+                Confidence Level
+                {% if confidence >= 80 %}
+                  <span style="font-size:0.7rem; color:#34d399; margin-left:0.3rem;"><i class="fas fa-check-circle"></i> High Certainty</span>
+                {% elif confidence >= 60 %}
+                  <span style="font-size:0.7rem; color:#fbbf24; margin-left:0.3rem;"><i class="fas fa-info-circle"></i> Moderate</span>
+                {% else %}
+                  <span style="font-size:0.7rem; color:#f87171; margin-left:0.3rem;"><i class="fas fa-exclamation-triangle"></i> Borderline</span>
+                {% endif %}
+              </span>
               <span class="conf-pct {% if confidence > 75 %}conf-high{% elif confidence > 60 %}conf-mid{% else %}conf-low{% endif %}">
                 {{ confidence | round(2) }}%
               </span>
             </div>
-            <div class="conf-bar">
+            <div class="conf-bar" title="{{ confidence | round(2) }}% model confidence">
               <div class="conf-fill {% if confidence > 75 %}conf-high{% elif confidence > 60 %}conf-mid{% else %}conf-low{% endif %}"
-                   style="width:{{ confidence }}%"></div>
+                   style="width:{{ confidence }}%;"
+                   id="conf-progress-bar"></div>
             </div>
 
             {% if warning %}
