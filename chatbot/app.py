@@ -247,21 +247,39 @@ def get_or_create_chat_session():
     if not user:
         return None
     session_id = session.get('chat_session_id')
+    curr_scan_id = session.get('scan_db_id')
+    curr_stage   = session.get('stage')
+
     if session_id:
         chat_sess = ChatSession.query.get(session_id)
         if chat_sess and chat_sess.user_id == user.id:
+            # Sync session scan context if a new scan was processed
+            if curr_scan_id and chat_sess.scan_id != curr_scan_id:
+                chat_sess.scan_id = curr_scan_id
+                chat_sess.scan_stage = curr_stage
+                db.session.commit()
             return chat_sess
-    scan_id    = session.get('scan_db_id')
-    scan_stage = session.get('stage')
-    chat_sess  = ChatSession(user_id=user.id, scan_id=scan_id, scan_stage=scan_stage)
+
+    chat_sess  = ChatSession(user_id=user.id, scan_id=curr_scan_id, scan_stage=curr_stage)
     db.session.add(chat_sess)
     db.session.commit()
     session['chat_session_id'] = chat_sess.id
     return chat_sess
 
 def generate_stage_context():
+    user = current_user()
     stage      = session.get('stage')
     confidence = session.get('confidence')
+
+    if not stage and user:
+        latest_scan = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).first()
+        if latest_scan:
+            stage = latest_scan.prediction
+            confidence = latest_scan.confidence
+            session['stage'] = stage
+            session['confidence'] = confidence
+            session['scan_db_id'] = latest_scan.id
+
     if stage and confidence is not None:
         advice = {
             "NonDemented":      "The MRI suggests no signs of dementia. Provide reassurance and preventive lifestyle guidance.",
@@ -271,7 +289,7 @@ def generate_stage_context():
             "Uncertain":        "The model could not confidently classify the scan. Advise professional evaluation."
         }.get(stage, "")
         return f"The MRI prediction stage is {stage} with {confidence:.2f}% confidence. {advice}"
-    return "No MRI scan has been uploaded yet."
+    return "No MRI scan has been uploaded yet. Provide general neuro-health information and recommend uploading a scan."
 
 def generate_chatbot_response(user_message):
     stage_context = generate_stage_context()
