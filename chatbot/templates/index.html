@@ -825,6 +825,14 @@
           }
         }
       }, false);
+
+      // Keyboard activation for accessibility
+      dropZone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          fileInput.click();
+        }
+      });
     }
 
     // Submit Loading and Skeleton Display
