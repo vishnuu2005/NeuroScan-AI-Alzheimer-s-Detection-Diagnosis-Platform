@@ -480,6 +480,16 @@
           </button>
         </form>
 
+        <!-- Shimmer Skeleton Loading State -->
+        <div id="inference-loading-skeleton" style="display:none; margin-top:1.5rem;">
+          <div class="skeleton" style="height:28px; width:55%; margin-bottom:1rem; border-radius:20px;"></div>
+          <div class="skeleton" style="height:110px; width:100%; margin-bottom:1rem; border-radius:12px;"></div>
+          <div class="skeleton" style="height:150px; width:100%; border-radius:12px;"></div>
+          <div style="text-align:center; font-size:0.75rem; color:var(--muted); margin-top:0.75rem;">
+            <i class="fas fa-brain fa-pulse" style="color:var(--accent);"></i> ResNet-18 feature extraction in progress...
+          </div>
+        </div>
+
         <!-- Results -->
         {% if prediction %}
         <div class="results-section">
@@ -814,6 +824,29 @@
           }
         }
       }, false);
+    }
+
+    // Submit Loading and Skeleton Display
+    const uploadForm = document.getElementById('upload-form');
+    const submitBtn = document.getElementById('btn-submit-scan');
+    const skeletonLoader = document.getElementById('inference-loading-skeleton');
+
+    if (uploadForm) {
+      uploadForm.addEventListener('submit', function(e) {
+        if (!fileInput.files || fileInput.files.length === 0) {
+          e.preventDefault();
+          fileError.textContent = 'Please choose an MRI image before analyzing.';
+          fileError.style.display = 'block';
+          return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing MRI Volume...';
+        if (skeletonLoader) {
+          skeletonLoader.style.display = 'block';
+          const existingResults = document.querySelector('.results-section');
+          if (existingResults) existingResults.style.opacity = '0.3';
+        }
+      });
     }
   </script>
 </body>
