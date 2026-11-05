@@ -552,8 +552,10 @@ def delete_chat(session_id):
     return jsonify({'status': 'deleted'})
 
 @app.route('/uploads/<filename>')
+@login_required
 def serve_upload(filename):
-    return redirect(url_for('static', filename='uploads/' + filename), code=301)
+    safe_name = secure_filename(filename)
+    return redirect(url_for('static', filename='uploads/' + safe_name), code=302)
 
 # ==============================
 # Run
