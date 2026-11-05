@@ -427,6 +427,43 @@
       border-radius: 4px;
       color: var(--accent2);
     }
+
+    /* Responsive Viewport Optimizations */
+    @media (max-width: 900px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+      header {
+        padding: 0 1rem;
+      }
+      .disclaimer-pill {
+        display: none;
+      }
+      main {
+        flex-direction: column;
+        overflow: visible;
+        height: auto;
+      }
+      .upload-panel {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        overflow-y: visible;
+      }
+      .chat-panel {
+        width: 100%;
+        min-height: 520px;
+        height: auto;
+      }
+      .btn-predict,
+      .btn-download,
+      .send-btn,
+      .suggestion-chip {
+        min-height: 44px;
+      }
+    }
   </style>
 </head>
 <body>
