@@ -31,14 +31,44 @@ def load_model(model_path, num_classes=4, dropout_prob=0.6, freeze_layers=True, 
 
 
 # =======================
-# Image Preprocessing
+# Image Preprocessing & Validation
 # =======================
-def transform_image(image_path, image_size=None):
-    # Use the training image size (default 224) unless overridden
-    if image_size is None:
-        image_size = int(os.getenv('IMAGE_SIZE', '224'))
+def load_and_validate_image(image_path):
+    """
+    Safely opens and verifies an image file from disk.
+    Ensures file descriptors are cleanly closed and corrupt files raise clear errors.
+    """
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image not found at path: {image_path}")
 
-    img = Image.open(image_path).convert('L')  # grayscale only, no RGB conversion
+    try:
+        with Image.open(image_path) as img:
+            img.verify()
+        with Image.open(image_path) as img:
+            if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+                canvas = Image.new('RGB', img.size, (255, 255, 255))
+                canvas.paste(img, mask=img.convert('RGBA').split()[-1])
+                img_converted = canvas.convert('L')
+            else:
+                img_converted = img.convert('L')
+            img_converted.load()
+            return img_converted.copy()
+    except Exception as exc:
+        raise ValueError(f"Unable to read or parse MRI image: {exc}") from exc
+
+
+def transform_image(image_path, image_size=None):
+    """
+    Load, validate, and transform MRI image for ResNet inference.
+    Normalizes grayscale tensor to [-1.0, 1.0].
+    """
+    if image_size is None:
+        try:
+            image_size = int(os.getenv('IMAGE_SIZE', '224'))
+        except (ValueError, TypeError):
+            image_size = 224
+
+    img = load_and_validate_image(image_path)
 
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
