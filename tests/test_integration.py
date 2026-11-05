@@ -194,6 +194,11 @@ def test_pdf_report_caching_and_download():
     assert resp.content_type == 'application/pdf'
     assert resp.data.startswith(b'%PDF-')
 
+    # Verify reports gallery shows download link
+    gallery_resp = client.get('/reports')
+    assert gallery_resp.status_code == 200
+    assert f'/download_report/{scan_id}' in gallery_resp.data.decode('utf-8')
+
     # Cleanup
     with app.app_context():
         Scan.query.filter_by(user_id=uid).delete()
