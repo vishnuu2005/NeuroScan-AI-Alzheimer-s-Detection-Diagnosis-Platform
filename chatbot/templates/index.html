@@ -454,8 +454,9 @@
 
         <!-- Upload form -->
         <form method="POST" enctype="multipart/form-data" id="upload-form">
-          <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-zone" onclick="document.getElementById('file-input').click()" role="button" tabindex="0" aria-label="Upload MRI scan zone">
             <input type="file" id="file-input" name="file" accept="image/*" required
+                   aria-label="MRI scan image file" aria-describedby="file-name"
                    onchange="document.getElementById('file-name').textContent = this.files[0]?.name || ''">
             <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
             <div class="upload-text">Drop MRI scan here or <strong>browse</strong></div>
@@ -570,7 +571,7 @@
     </div>
 
     <!-- Chat Panel -->
-    <div class="chat-panel">
+    <div class="chat-panel" role="region" aria-label="Clinical AI Assistant Chat">
       <div class="panel-header" style="background:var(--surface);border-bottom:1px solid var(--border)">
         <i class="fas fa-robot"></i> Alzheimer's Assistant
         <span style="margin-left:auto;font-size:0.7rem;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400">
@@ -578,7 +579,7 @@
         </span>
       </div>
 
-      <div class="chat-messages" id="chat-box">
+      <div class="chat-messages" id="chat-box" role="log" aria-live="polite" aria-label="Consultation chat transcript">
         <div class="msg">
           <div class="msg-avatar bot-avatar"><i class="fas fa-robot"></i></div>
           <div class="msg-bubble bot-bubble">
@@ -594,14 +595,15 @@
         <button class="suggestion-chip" onclick="askSuggestion(this)">How to care for the patient?</button>
       </div>
 
-      <div class="chat-input-area">
+      <div class="chat-input-area" role="form" aria-label="Send message form">
         <input class="chat-input" id="chat-input" type="text"
+               aria-label="Message prompt for medical assistant"
                placeholder="Ask about Alzheimer's, treatments, caregiving..."
                onkeydown="if(event.key==='Enter') sendMessage()">
-        <button class="clear-btn" onclick="clearChat()" title="Clear chat">
+        <button class="clear-btn" onclick="clearChat()" title="Clear chat" aria-label="Clear conversation history">
           <i class="fas fa-trash-alt"></i>
         </button>
-        <button class="send-btn" onclick="sendMessage()">
+        <button class="send-btn" onclick="sendMessage()" aria-label="Send message">
           <i class="fas fa-paper-plane"></i>
         </button>
       </div>
