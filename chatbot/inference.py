@@ -45,7 +45,31 @@ def load_model(model_path, num_classes=4, dropout_prob=0.6, freeze_layers=True, 
     model.sequential_fc = sequential_fc
     model.to(device)
     model.eval()
+    try:
+        warmup_model(model, in_channels=in_channels)
+    except Exception:
+        pass
     return model
+
+
+def warmup_model(model, in_channels=None, image_size=None):
+    """
+    Executes a synthetic forward pass to warm up PyTorch CPU/CUDA kernels and eliminate first-request latency.
+    """
+    if in_channels is None:
+        in_channels = getattr(model, 'in_channels', 3)
+    if image_size is None:
+        try:
+            image_size = int(os.getenv('IMAGE_SIZE', '224'))
+        except Exception:
+            image_size = 224
+
+    device = next(model.parameters()).device
+    dummy_input = torch.zeros((1, in_channels, image_size, image_size), device=device)
+    model.eval()
+    with torch.inference_mode():
+        _ = model(dummy_input)
+    return True
 
 
 # =======================
