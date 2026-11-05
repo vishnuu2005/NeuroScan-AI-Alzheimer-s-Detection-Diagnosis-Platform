@@ -74,6 +74,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'La
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', '0').lower() in ('1', 'true', 'yes')
 app.config['PERMANENT_SESSION_LIFETIME'] = int(os.getenv('PERMANENT_SESSION_LIFETIME', '86400'))
 app.config['SESSION_REFRESH_EACH_REQUEST'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = int(os.getenv('SEND_FILE_MAX_AGE_DEFAULT', '31536000'))
 app.config['UPLOAD_FOLDER'] = UPLOADS_DIR
 app.config['REPORTS_FOLDER'] = REPORTS_DIR
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
@@ -784,6 +785,13 @@ def set_security_headers(response):
         "connect-src 'self';"
     )
     response.headers['Content-Security-Policy'] = csp
+    # Performance cache headers: static assets cached aggressively, dynamic endpoints revalidated
+    if request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    elif 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
     return response
 
 
