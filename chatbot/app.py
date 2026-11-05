@@ -83,9 +83,19 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+def init_db(application=app):
+    """Initialize database tables within application context."""
+    with application.app_context():
+        db.create_all()
+
 # Ensure database tables exist automatically on application import
-with app.app_context():
-    db.create_all()
+init_db(app)
+
+@app.cli.command('init-db')
+def init_db_command():
+    """CLI command to create database tables."""
+    init_db(app)
+    print("Initialized database tables.")
 
 # ==============================
 # Database Models
