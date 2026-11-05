@@ -1,6 +1,6 @@
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file, flash
 from PIL import Image
@@ -34,12 +34,39 @@ if USE_GROQ:
 # Flask + DB Setup
 # ==============================
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "neuroscan_secret_2024")
+
+secret_key = os.getenv("FLASK_SECRET_KEY")
+if not secret_key:
+    if os.getenv("FLASK_ENV") == "production":
+        raise ValueError("CRITICAL: FLASK_SECRET_KEY must be set in production environments.")
+    secret_key = "neuroscan_secret_2024"
+
+app.secret_key = secret_key
 app.config['UPLOAD_FOLDER'] = 'static/uploads/'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///neuroscan.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Hardened Session Cookie Configuration
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = (
+    os.getenv("SESSION_COOKIE_SECURE", "0").lower() in ("1", "true", "yes")
+    or os.getenv("FLASK_ENV") == "production"
+)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
 db = SQLAlchemy(app)
+
+# ==============================
+# Security Response Headers
+# ==============================
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
 
 # ==============================
 # Database Models
@@ -248,8 +275,10 @@ def login():
         user     = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
             session.clear()
+            session.permanent = True
             session['user_id']   = user.id
             session['user_name'] = user.name
+            session.modified = True
             return redirect(url_for('dashboard'))
         flash('Invalid email or password.', 'error')
     return render_template('login.html')
@@ -274,6 +303,8 @@ def register():
 @app.route('/logout')
 def logout():
     session.clear()
+    session.modified = True
+    flash('You have been logged out securely.', 'info')
     return redirect(url_for('login'))
 
 # ==============================
