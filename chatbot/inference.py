@@ -1,4 +1,5 @@
 import os
+import math
 import torch
 from models.resnet_model import get_resnet2d
 from PIL import Image
@@ -51,6 +52,34 @@ def transform_image(image_path, image_size=None):
 
 
 # =======================
+# Uncertainty & Metrics
+# =======================
+def calculate_prediction_entropy(probs_tensor):
+    """
+    Calculate normalized Shannon entropy for model prediction probabilities.
+    Returns float in [0.0, 1.0] where 0.0 represents complete certainty
+    and 1.0 represents uniform uncertainty across all classes.
+    """
+    eps = 1e-12
+    num_classes = probs_tensor.size(-1)
+    if num_classes <= 1:
+        return 0.0
+    entropy = -torch.sum(probs_tensor * torch.log2(probs_tensor + eps), dim=-1).item()
+    max_entropy = math.log2(num_classes)
+    return float(min(max(entropy / max_entropy, 0.0), 1.0))
+
+
+def get_top_predictions(all_probs, top_k=None):
+    """
+    Returns list of (class_name, probability_percentage) sorted by descending likelihood.
+    """
+    sorted_items = sorted(all_probs.items(), key=lambda item: item[1], reverse=True)
+    if top_k is not None:
+        return sorted_items[:top_k]
+    return sorted_items
+
+
+# =======================
 # Prediction
 # =======================
 def predict(model, image_tensor, classes, threshold=None):
@@ -82,3 +111,44 @@ def predict(model, image_tensor, classes, threshold=None):
         predicted_class = "Uncertain"
 
     return predicted_class, confidence, all_probs, warning
+
+
+def predict_detailed(model, image_tensor, classes, threshold=None):
+    """
+    Enhanced prediction returning rich diagnostic metrics including entropy and ranking.
+    """
+    model.eval()
+    device = next(model.parameters()).device
+    image_tensor = image_tensor.to(device)
+
+    if threshold is None:
+        try:
+            threshold = float(os.getenv('PREDICTION_THRESHOLD', '0.3'))
+        except Exception:
+            threshold = 0.3
+
+    with torch.no_grad():
+        outputs = model(image_tensor)
+        probs = torch.softmax(outputs, dim=1)
+        confidence_tensor, pred_idx = torch.max(probs, dim=1)
+        confidence = confidence_tensor.item() * 100
+        predicted_class = classes[pred_idx.item()]
+        all_probs = {classes[i]: float(probs[0, i]) * 100 for i in range(len(classes))}
+        entropy = calculate_prediction_entropy(probs)
+        top_ranked = get_top_predictions(all_probs)
+
+    warning = None
+    if confidence < threshold * 100:
+        warning = "Low confidence prediction. Please consult a neurologist for further evaluation."
+        predicted_class = "Uncertain"
+    elif entropy > 0.85:
+        warning = "High entropy across diagnostic stages. Independent clinical review advised."
+
+    return {
+        "predicted_class": predicted_class,
+        "confidence": confidence,
+        "all_probs": all_probs,
+        "entropy": entropy,
+        "top_ranked": top_ranked,
+        "warning": warning
+    }
