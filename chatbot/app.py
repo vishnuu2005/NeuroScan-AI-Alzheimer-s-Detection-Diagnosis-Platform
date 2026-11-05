@@ -114,6 +114,10 @@ def init_db(application=app):
                     conn.execute(db.text("ALTER TABLE scan ADD COLUMN processing_ms FLOAT DEFAULT 0.0"))
                 if cols and 'model_version' not in cols:
                     conn.execute(db.text("ALTER TABLE scan ADD COLUMN model_version VARCHAR(50) DEFAULT 'ResNet18-Adaptive'"))
+                # Composite performance indexes
+                conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_scan_user_created ON scan (user_id, created_at)"))
+                conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_chat_session_user_created ON chat_session (user_id, created_at)"))
+                conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_chat_message_session_created ON chat_message (chat_session_id, created_at)"))
                 conn.commit()
         except Exception as e:
             print("Auto-migration notice:", e)
@@ -133,29 +137,35 @@ def init_db_command():
 class User(db.Model):
     id            = db.Column(db.Integer, primary_key=True)
     name          = db.Column(db.String(100), nullable=False)
-    email         = db.Column(db.String(120), unique=True, nullable=False)
+    email         = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password      = db.Column(db.String(200), nullable=False)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     scans         = db.relationship('Scan', backref='user', lazy=True, cascade='all, delete-orphan')
     chat_sessions = db.relationship('ChatSession', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Scan(db.Model):
+    __table_args__ = (
+        db.Index('idx_scan_user_created', 'user_id', 'created_at'),
+    )
     id            = db.Column(db.Integer, primary_key=True)
-    user_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     prediction    = db.Column(db.String(50), nullable=False)
     confidence    = db.Column(db.Float, nullable=False)
     all_probs     = db.Column(db.Text, nullable=False)
     warning       = db.Column(db.String(200))
     processing_ms = db.Column(db.Float, default=0.0)
     model_version = db.Column(db.String(50), default='ResNet18-Adaptive')
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
 class ChatSession(db.Model):
+    __table_args__ = (
+        db.Index('idx_chat_session_user_created', 'user_id', 'created_at'),
+    )
     id         = db.Column(db.Integer, primary_key=True)
-    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     scan_id    = db.Column(db.Integer, db.ForeignKey('scan.id'), nullable=True)
     scan_stage = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     messages   = db.relationship('ChatMessage', backref='chat_session', lazy=True, cascade='all, delete-orphan')
 
     @property
@@ -163,8 +173,11 @@ class ChatSession(db.Model):
         return len(self.messages)
 
 class ChatMessage(db.Model):
+    __table_args__ = (
+        db.Index('idx_chat_message_session_created', 'chat_session_id', 'created_at'),
+    )
     id              = db.Column(db.Integer, primary_key=True)
-    chat_session_id = db.Column(db.Integer, db.ForeignKey('chat_session.id'), nullable=False)
+    chat_session_id = db.Column(db.Integer, db.ForeignKey('chat_session.id'), nullable=False, index=True)
     role            = db.Column(db.String(20), nullable=False)
     content         = db.Column(db.Text, nullable=False)
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
