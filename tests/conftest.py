@@ -19,5 +19,11 @@ def ensure_database_schema():
         yield
         try:
             db.session.rollback()
+            for table in reversed(db.metadata.sorted_tables):
+                db.session.execute(table.delete())
+            db.session.commit()
         except Exception:
-            pass
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
