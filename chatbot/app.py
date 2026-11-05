@@ -651,11 +651,17 @@ def delete_chat(session_id):
     db.session.commit()
     return jsonify({'status': 'deleted'})
 
-@app.route('/uploads/<filename>')
+@app.route('/uploads/<path:filename>')
 @login_required
 def serve_upload(filename):
-    safe_name = secure_filename(filename)
-    return redirect(url_for('static', filename='uploads/' + safe_name), code=302)
+    safe_name = secure_filename(os.path.basename(filename))
+    if not safe_name:
+        return "Invalid filename", 400
+    safe_dir = os.path.abspath(app.config['UPLOAD_FOLDER'])
+    target_path = os.path.abspath(os.path.join(safe_dir, safe_name))
+    if not target_path.startswith(safe_dir) or not os.path.exists(target_path):
+        return "File not found or access denied", 404
+    return send_file(target_path)
 
 # ==============================
 # Security Middleware (OWASP)
