@@ -235,15 +235,18 @@ def make_page_decorator(accent_color, total_pages_ref):
 def generate_report(prediction: str,
                     confidence: float,
                     all_probs: dict,
-                    output_path: str) -> str:
+                    output_path: str,
+                    model_version: str = "ResNet18-Adaptive",
+                    reference_id: str = None) -> str:
 
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
     stage  = STAGE_INFO.get(prediction, STAGE_INFO["Unknown / Low Confidence"])
     accent = stage["accent"]
     accent_light = stage["accent_light"]
     accent_mid   = stage["accent_mid"]
     now    = datetime.now().strftime("%d %B %Y  ·  %I:%M %p")
+    ref_id = reference_id or f"NSA-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
     # Inner margins (header + footer consume space)
     doc = SimpleDocTemplate(
@@ -287,10 +290,10 @@ def generate_report(prediction: str,
         Paragraph(f'<font color="#64748b" size="8">Report Date</font><br/>'
                   f'<b>{now}</b>', S("md", fontSize=8, textColor=SLATE)),
         Paragraph(f'<font color="#64748b" size="8">Reference ID</font><br/>'
-                  f'<b>NSA-{datetime.now().strftime("%Y%m%d-%H%M%S")}</b>',
+                  f'<b>{ref_id}</b>',
                   S("md", fontSize=8, textColor=SLATE)),
-        Paragraph(f'<font color="#64748b" size="8">Model Version</font><br/>'
-                  f'<b>v2.1.0-stable</b>', S("md", fontSize=8, textColor=SLATE)),
+        Paragraph(f'<font color="#64748b" size="8">Inference Model</font><br/>'
+                  f'<b>{model_version}</b>', S("md", fontSize=8, textColor=SLATE)),
     ]]
     meta_tbl = Table(meta_data, colWidths=[W/3]*3)
     meta_tbl.setStyle(TableStyle([
