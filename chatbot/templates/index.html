@@ -444,12 +444,12 @@
     </div>
   </header>
 
-  <main>
+  <main role="main">
 
     <!-- Upload + Results Panel -->
-    <div class="upload-panel">
+    <section class="upload-panel" aria-label="MRI Scan Upload and Results">
       <div class="panel-header">
-        <i class="fas fa-microscope"></i> MRI Analysis
+        <i class="fas fa-microscope" aria-hidden="true"></i> MRI Analysis
       </div>
       <div class="panel-body">
 
@@ -457,8 +457,8 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                <i class="fas fa-exclamation-circle"></i>
+              <div role="alert" style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
                 <span>{{ message }}</span>
               </div>
             {% endfor %}
@@ -467,16 +467,16 @@
 
         <!-- Upload form -->
         <form method="POST" enctype="multipart/form-data" id="upload-form">
-          <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-            <input type="file" id="file-input" name="file" accept=".png,.jpg,.jpeg,.webp,.tif,.tiff" required style="display:none">
-            <div class="upload-icon" id="upload-cloud-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+          <div class="upload-zone" id="drop-zone" tabindex="0" role="button" aria-label="Upload MRI scan file" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" name="file" accept=".png,.jpg,.jpeg,.webp,.tif,.tiff" required style="display:none" aria-label="Select MRI image file">
+            <div class="upload-icon" id="upload-cloud-icon"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i></div>
             <img id="mri-preview-thumb" alt="MRI Scan Preview" style="display:none; max-height:120px; max-width:90%; border-radius:8px; border:1px solid var(--border); margin:0.5rem auto; object-fit:contain; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
             <div class="upload-text" id="upload-instruction">Drop MRI scan here or <strong>browse</strong></div>
-            <div class="selected-file" id="file-name"></div>
-            <div id="file-error" style="display:none; color:#f87171; font-size:0.75rem; margin-top:0.5rem;"></div>
+            <div class="selected-file" id="file-name" aria-live="polite"></div>
+            <div id="file-error" role="alert" aria-live="assertive" style="display:none; color:#f87171; font-size:0.75rem; margin-top:0.5rem;"></div>
           </div>
-          <button type="submit" class="btn-predict" id="btn-submit-scan">
-            <i class="fas fa-search"></i> Analyse Scan
+          <button type="submit" class="btn-predict" id="btn-submit-scan" aria-label="Analyse MRI Scan">
+            <i class="fas fa-search" aria-hidden="true"></i> Analyse Scan
           </button>
         </form>
 
@@ -622,18 +622,18 @@
         </div>
         {% endif %}
       </div>
-    </div>
+    </section>
 
     <!-- Chat Panel -->
-    <div class="chat-panel">
+    <section class="chat-panel" aria-label="Interactive Clinical Chat Assistant">
       <div class="panel-header" style="background:var(--surface);border-bottom:1px solid var(--border)">
-        <i class="fas fa-robot"></i> Alzheimer's Assistant
+        <i class="fas fa-robot" aria-hidden="true"></i> Alzheimer's Assistant
         <span style="margin-left:auto;font-size:0.7rem;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400">
           Powered by Llama 3.3 · 70B
         </span>
       </div>
 
-      <div class="chat-messages" id="chat-box">
+      <div class="chat-messages" id="chat-box" role="log" aria-live="polite">
         <div class="msg">
           <div class="msg-avatar bot-avatar"><i class="fas fa-robot"></i></div>
           <div class="msg-bubble bot-bubble">
@@ -652,15 +652,16 @@
       <div class="chat-input-area">
         <input class="chat-input" id="chat-input" type="text"
                placeholder="Ask about Alzheimer's, treatments, caregiving..."
+               aria-label="Ask clinical assistant a question"
                onkeydown="if(event.key==='Enter') sendMessage()">
-        <button class="clear-btn" onclick="clearChat()" title="Clear chat">
-          <i class="fas fa-trash-alt"></i>
+        <button class="clear-btn" onclick="clearChat()" title="Clear chat" aria-label="Clear chat messages">
+          <i class="fas fa-trash-alt" aria-hidden="true"></i>
         </button>
-        <button class="send-btn" onclick="sendMessage()">
-          <i class="fas fa-paper-plane"></i>
+        <button class="send-btn" onclick="sendMessage()" aria-label="Send clinical inquiry">
+          <i class="fas fa-paper-plane" aria-hidden="true"></i>
         </button>
       </div>
-    </div>
+    </section>
 
   </main>
 
