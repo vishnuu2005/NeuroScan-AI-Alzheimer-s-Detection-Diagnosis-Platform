@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: neuroscan_app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_SECRET_KEY=change_this_to_a_secure_random_key_in_production
+      - USE_GROQ=1
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=llama-3.3-70b-versatile
+      - PREDICTION_THRESHOLD=0.3
+    volumes:
+      - neuroscan_uploads:/app/static/uploads
+      - neuroscan_reports:/app/static/reports
+      - neuroscan_data:/app/instance
+    restart: unless-stopped
+
+volumes:
+  neuroscan_uploads:
+  neuroscan_reports:
+  neuroscan_data:
