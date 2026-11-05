@@ -133,6 +133,39 @@ def test_persistent_chat_consultation_context():
             db.session.delete(u)
         db.session.commit()
 
+def test_chat_session_state_transition():
+    app.config['TESTING'] = True
+    client = app.test_client()
+    with app.app_context():
+        email = f"chattrans_{uuid.uuid4().hex[:8]}@hospital.org"
+        user = User(name="Transition User", email=email, password="Password123!")
+        db.session.add(user)
+        db.session.commit()
+        uid = user.id
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = uid
+
+    # Send message, clear, and verify new session created
+    r1 = client.post('/chat', json={'message': 'Initial question'})
+    assert r1.status_code == 200
+
+    r_clear = client.post('/clear_chat')
+    assert r_clear.status_code == 200
+
+    with client.session_transaction() as sess:
+        assert 'chat_session_id' not in sess
+
+    # Cleanup
+    with app.app_context():
+        for cs in ChatSession.query.filter_by(user_id=uid).all():
+            ChatMessage.query.filter_by(chat_session_id=cs.id).delete()
+            db.session.delete(cs)
+        u = User.query.get(uid)
+        if u:
+            db.session.delete(u)
+        db.session.commit()
+
 def test_pdf_report_caching_and_download():
     app.config['TESTING'] = True
     client = app.test_client()
