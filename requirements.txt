@@ -1,17 +1,24 @@
-Flask
-Flask-SQLAlchemy
-python-dotenv
-Pillow
-groq
-matplotlib
-seaborn
-scikit-learn
-torch
-torchvision
-requests
-Werkzeug
-jinja2
-SQLAlchemy
-python-dotenv
+# Core Web Framework
+Flask>=3.0.0
+Flask-SQLAlchemy>=3.1.0
+Werkzeug>=3.0.0
+jinja2>=3.1.0
+python-dotenv>=1.0.0
+requests>=2.31.0
 
-# Optional: add specific versions if needed
+# Deep Learning & Image Processing
+torch>=2.0.0
+torchvision>=0.15.0
+Pillow>=10.0.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# LLM Chatbot Integration
+groq>=0.9.0
+
+# Report Generation
+reportlab>=3.6.0
+
+# Testing & Quality Assurance
+pytest>=7.4.0
