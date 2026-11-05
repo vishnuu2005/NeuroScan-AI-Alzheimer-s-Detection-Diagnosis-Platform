@@ -288,6 +288,10 @@ def test_logout_and_unauthorized_redirection():
     assert l_resp.status_code == 302
     assert '/login' in l_resp.headers.get('Location', '')
 
+    with client.session_transaction() as sess:
+        assert 'user_id' not in sess
+        assert 'stage' not in sess
+
     # Protected routes redirect to login
     for route in ['/', '/dashboard', '/reports', '/history', '/chat_history']:
         r = client.get(route)
