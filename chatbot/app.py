@@ -375,13 +375,13 @@ def logout():
 @login_required
 def dashboard():
     user          = current_user()
-    scans         = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).all()
+    total_scans    = Scan.query.filter_by(user_id=user.id).count()
+    non_demented   = Scan.query.filter_by(user_id=user.id, prediction='NonDemented').count()
+    mild_count     = Scan.query.filter(Scan.user_id == user.id, Scan.prediction.in_(['MildDemented', 'VeryMildDemented'])).count()
+    moderate_count = Scan.query.filter_by(user_id=user.id, prediction='ModerateDemented').count()
+    scans         = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).limit(15).all()
     chat_sessions = ChatSession.query.filter_by(user_id=user.id)\
-                                     .order_by(ChatSession.created_at.desc()).all()
-    total_scans    = len(scans)
-    non_demented   = sum(1 for s in scans if s.prediction == 'NonDemented')
-    mild_count     = sum(1 for s in scans if s.prediction in ['MildDemented', 'VeryMildDemented'])
-    moderate_count = sum(1 for s in scans if s.prediction == 'ModerateDemented')
+                                     .order_by(ChatSession.created_at.desc()).limit(10).all()
     return render_template('dashboard.html',
         current_user=user, scans=scans, chat_sessions=chat_sessions,
         total_scans=total_scans, non_demented=non_demented,
