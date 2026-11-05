@@ -469,8 +469,9 @@
         <form method="POST" enctype="multipart/form-data" id="upload-form">
           <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
             <input type="file" id="file-input" name="file" accept=".png,.jpg,.jpeg,.webp,.tif,.tiff" required style="display:none">
-            <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-            <div class="upload-text">Drop MRI scan here or <strong>browse</strong></div>
+            <div class="upload-icon" id="upload-cloud-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+            <img id="mri-preview-thumb" alt="MRI Scan Preview" style="display:none; max-height:120px; max-width:90%; border-radius:8px; border:1px solid var(--border); margin:0.5rem auto; object-fit:contain; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+            <div class="upload-text" id="upload-instruction">Drop MRI scan here or <strong>browse</strong></div>
             <div class="selected-file" id="file-name"></div>
             <div id="file-error" style="display:none; color:#f87171; font-size:0.75rem; margin-top:0.5rem;"></div>
           </div>
@@ -756,6 +757,26 @@
         : (file.size / 1024).toFixed(1) + ' KB';
 
       fileNameDisplay.textContent = `${file.name} (${formattedSize})`;
+
+      // Render instant image thumbnail preview
+      try {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const thumb = document.getElementById('mri-preview-thumb');
+          const icon = document.getElementById('upload-cloud-icon');
+          const instr = document.getElementById('upload-instruction');
+          if (thumb) {
+            thumb.src = e.target.result;
+            thumb.style.display = 'block';
+          }
+          if (icon) icon.style.display = 'none';
+          if (instr) instr.innerHTML = 'Scan loaded · Click or drop to <strong>replace</strong>';
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Thumbnail preview unavailable:', err);
+      }
+
       return true;
     }
 
