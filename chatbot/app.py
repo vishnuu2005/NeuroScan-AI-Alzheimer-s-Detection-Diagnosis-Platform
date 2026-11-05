@@ -415,7 +415,6 @@ def register():
     if len(password) > 128:
         flash('Password cannot exceed 128 characters.', 'error')
         return redirect(url_for('login'))
-        return redirect(url_for('login'))
         
     if not email or not EMAIL_REGEX.match(email):
         flash('Please enter a valid clinical email address.', 'error')
@@ -434,6 +433,40 @@ def register():
     db.session.commit()
     flash('Account created! Please sign in.', 'success')
     return redirect(url_for('login'))
+
+
+@app.route('/health', methods=['GET'])
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """
+    System diagnostic endpoint verifying database connectivity, AI model readiness,
+    and external service availability.
+    """
+    db_status = "ok"
+    try:
+        db.session.execute(db.text("SELECT 1")).scalar()
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
+    model_status = "ready" if alz_model is not None else "unloaded"
+    in_channels = getattr(alz_model, 'in_channels', 3) if alz_model else None
+
+    groq_status = "connected" if client is not None else "offline_fallback_active"
+
+    status_code = 200 if db_status == "ok" and model_status == "ready" else 503
+    return jsonify({
+        "status": "healthy" if status_code == 200 else "degraded",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "database": db_status,
+        "model": {
+            "status": model_status,
+            "architecture": f"ResNet18-{in_channels}ch" if in_channels else "None",
+            "classes": classes
+        },
+        "clinical_ai_service": groq_status,
+        "version": "2.0.0"
+    }), status_code
+
 
 @app.route('/logout')
 def logout():
