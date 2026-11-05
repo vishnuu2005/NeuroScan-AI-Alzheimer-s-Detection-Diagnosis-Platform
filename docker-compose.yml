@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  neuroscan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: neuroscan-ai:latest
+    container_name: neuroscan_platform
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-neuroscan_prod_secret_token_default}
+      - SQLALCHEMY_DATABASE_URI=sqlite:////app/instance/neuroscan.db
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - USE_GROQ=${USE_GROQ:-1}
+      - MODEL_PATH=/app/models/resnet2d_alzheimers_best.pth
+      - PREDICTION_THRESHOLD=0.30
+      - IMAGE_SIZE=224
+      - SESSION_COOKIE_SECURE=0
+    volumes:
+      - neuroscan_instance:/app/instance
+      - neuroscan_logs:/app/logs
+      - neuroscan_uploads:/app/chatbot/static/uploads
+      - neuroscan_reports:/app/chatbot/static/reports
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/login').read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  neuroscan_instance:
+  neuroscan_logs:
+  neuroscan_uploads:
+  neuroscan_reports:
