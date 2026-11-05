@@ -88,6 +88,8 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path in ('/chat', '/clear_chat'):
+                return jsonify({'success': False, 'error': 'Authentication required. Please log in.'}), 401
             flash('Please log in to continue.', 'error')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
@@ -364,9 +366,16 @@ def index():
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
-    user_message = request.json.get('message')
-    response     = generate_chatbot_response(user_message)
-    return jsonify({'response': response})
+    if not request.is_json:
+        return jsonify({'success': False, 'error': 'Request payload must be valid JSON.'}), 400
+    payload = request.get_json(silent=True) or {}
+    user_message = (payload.get('message') or '').strip()
+    if not user_message:
+        return jsonify({'success': False, 'error': 'Message content cannot be empty.'}), 400
+    if len(user_message) > 4000:
+        return jsonify({'success': False, 'error': 'Message exceeds 4,000 character limit.'}), 400
+    response = generate_chatbot_response(user_message)
+    return jsonify({'success': True, 'response': response})
 
 @app.route('/clear_chat', methods=['POST'])
 @login_required
@@ -428,15 +437,17 @@ def history():
 @login_required
 def delete_scan(scan_id):
     user = current_user()
-    scan = Scan.query.get_or_404(scan_id)
+    scan = Scan.query.get(scan_id)
+    if not scan:
+        return jsonify({'success': False, 'error': 'Scan record not found.'}), 404
     if scan.user_id != user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
+        return jsonify({'success': False, 'error': 'Unauthorized access.'}), 403
     for cs in ChatSession.query.filter_by(scan_id=scan_id).all():
         ChatMessage.query.filter_by(chat_session_id=cs.id).delete()
         db.session.delete(cs)
     db.session.delete(scan)
     db.session.commit()
-    return jsonify({'status': 'deleted'})
+    return jsonify({'success': True, 'status': 'deleted'})
 
 # ==============================
 # Routes — Chat History List
@@ -453,17 +464,35 @@ def chat_history_list():
 @login_required
 def delete_chat(session_id):
     user      = current_user()
-    chat_sess = ChatSession.query.get_or_404(session_id)
+    chat_sess = ChatSession.query.get(session_id)
+    if not chat_sess:
+        return jsonify({'success': False, 'error': 'Chat session not found.'}), 404
     if chat_sess.user_id != user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
+        return jsonify({'success': False, 'error': 'Unauthorized access.'}), 403
     ChatMessage.query.filter_by(chat_session_id=session_id).delete()
     db.session.delete(chat_sess)
     db.session.commit()
-    return jsonify({'status': 'deleted'})
+    return jsonify({'success': True, 'status': 'deleted'})
 
 @app.route('/uploads/<filename>')
 def serve_upload(filename):
     return redirect(url_for('static', filename='uploads/' + filename), code=301)
+
+# ==============================
+# Global JSON Error Handlers
+# ==============================
+@app.errorhandler(404)
+def not_found_handler(error):
+    if request.is_json or request.path in ('/chat', '/clear_chat') or request.path.startswith('/api/'):
+        return jsonify({'success': False, 'error': 'Resource or endpoint not found.'}), 404
+    return render_template('login.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    if request.is_json or request.path in ('/chat', '/clear_chat') or request.path.startswith('/api/'):
+        return jsonify({'success': False, 'error': 'Internal server error occurred.'}), 500
+    flash('An unexpected error occurred. Please try again.', 'error')
+    return redirect(url_for('index')), 500
 
 # ==============================
 # Run
