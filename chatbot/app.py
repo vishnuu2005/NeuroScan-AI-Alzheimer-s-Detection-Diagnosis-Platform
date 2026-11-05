@@ -323,6 +323,7 @@ def login():
         user     = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
             session.clear()
+            session.permanent    = True
             session['user_id']   = user.id
             session['user_name'] = user.name
             return redirect(url_for('dashboard'))
