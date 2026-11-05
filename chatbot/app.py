@@ -188,7 +188,7 @@ if custom_model_env:
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(base_dir)
-candidate_names = ["resnet2d_alzheimers.pth", "resnet2d_alzheimers_best.pth"]
+candidate_names = ["resnet2d_alzheimers_best.pth", "resnet2d_alzheimers.pth"]
 candidate_dirs = [
     os.path.join(project_root, "models"),
     os.path.join(os.getcwd(), "models"),
@@ -459,20 +459,30 @@ def index():
             return redirect(request.url)
 
         try:
+            in_channels = getattr(alz_model, 'in_channels', 3)
             try:
-                image_tensor = transform_image(filepath, in_channels=getattr(alz_model, 'in_channels', 1))
+                image_tensor = transform_image(filepath, in_channels=in_channels)
             except TypeError:
                 image_tensor = transform_image(filepath)
-            prediction, confidence, all_probs, warning = predict(alz_model, image_tensor, classes)
+
+            pred_out = predict(alz_model, image_tensor, classes)
+            if len(pred_out) == 5:
+                prediction, confidence, all_probs, warning, elapsed_ms = pred_out
+            else:
+                prediction, confidence, all_probs, warning = pred_out[:4]
+                elapsed_ms = 0.0
+
             description = stage_info.get(prediction, '')
             risk        = stage_risk.get(prediction, 'unknown')
 
             scan = Scan(
-                user_id    = user.id,
-                prediction = prediction,
-                confidence = confidence,
-                all_probs  = json.dumps(all_probs),
-                warning    = warning
+                user_id       = user.id,
+                prediction    = prediction,
+                confidence    = confidence,
+                all_probs     = json.dumps(all_probs),
+                warning       = warning,
+                processing_ms = elapsed_ms,
+                model_version = f"ResNet18-{in_channels}ch"
             )
             db.session.add(scan)
             db.session.commit()
