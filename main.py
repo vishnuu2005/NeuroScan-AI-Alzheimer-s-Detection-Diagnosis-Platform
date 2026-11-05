@@ -1,20 +1,25 @@
 import os
+from pathlib import Path
 
 # =======================
-# Force all caches to D: BEFORE importing torch
+# Dynamic Base Directory Resolution
 # =======================
-BASE_DIR = r"D:/AlzeigmersChatBot/AlzeigmersChatBot"
-TORCH_CACHE_DIR = os.path.join(BASE_DIR, "torch_cache")
-MODEL_DIR = os.path.join(BASE_DIR, "models")
-PLOT_DIR = os.path.join(BASE_DIR, "plots")
+DEFAULT_BASE = Path(__file__).resolve().parent
+BASE_DIR = os.getenv("NEUROSCAN_BASE_DIR", str(DEFAULT_BASE))
+TORCH_CACHE_DIR = os.getenv("TORCH_HOME", os.path.join(BASE_DIR, "torch_cache"))
+MODEL_DIR = os.getenv("NEUROSCAN_MODEL_DIR", os.path.join(BASE_DIR, "models"))
+PLOT_DIR = os.getenv("NEUROSCAN_PLOT_DIR", os.path.join(BASE_DIR, "plots"))
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(PLOT_DIR, exist_ok=True)
 os.makedirs(TORCH_CACHE_DIR, exist_ok=True)
 
-# Environment variables must be set BEFORE importing torch
+# Environment variables set BEFORE importing torch
 os.environ['TORCH_HOME'] = TORCH_CACHE_DIR
-os.environ['MATPLOTLIBRC'] = os.path.join(BASE_DIR, "matplotlib_cache")
+if 'MATPLOTLIBRC' not in os.environ:
+    mpl_cache = os.path.join(BASE_DIR, "matplotlib_cache")
+    os.makedirs(mpl_cache, exist_ok=True)
+    os.environ['MATPLOTLIBRC'] = mpl_cache
 
 # =======================
 # Imports

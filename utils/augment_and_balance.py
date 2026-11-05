@@ -73,6 +73,7 @@ def augment_and_balance(data_dir, target_dir, image_size=128):
 # Run script directly
 # ------------------------
 if __name__ == "__main__":
-    train_dir = r"D:/AlzeigmersChatBot/AlzeigmersChatBot/data/train"
-    augmented_dir = r"D:/AlzeigmersChatBot/AlzeigmersChatBot/data/train_aug"
+    base_data_dir = os.getenv("NEUROSCAN_DATA_DIR", os.path.join(os.getcwd(), "data"))
+    train_dir = os.getenv("TRAIN_DIR", os.path.join(base_data_dir, "train"))
+    augmented_dir = os.getenv("TRAIN_AUG_DIR", os.path.join(base_data_dir, "train_aug"))
     augment_and_balance(train_dir, augmented_dir, image_size=128)

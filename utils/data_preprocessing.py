@@ -15,17 +15,18 @@ def get_data_loaders(batch_size=32, image_size=224, use_augmented=True):
     Grayscale images are converted to RGB for pretrained ResNet.
     """
 
-    # Dataset Paths on D: drive
-    original_train_dir = r"D:/AlzeigmersChatBot/AlzeigmersChatBot/data/train"
-    augmented_train_dir = r"D:/AlzeigmersChatBot/AlzeigmersChatBot/data/train_aug"
-    test_dir = r"D:/AlzeigmersChatBot/AlzeigmersChatBot/data/test"
+    # Dataset Paths configurable via environment or local relative path
+    base_data_dir = os.getenv("NEUROSCAN_DATA_DIR", os.path.join(os.getcwd(), "data"))
+    original_train_dir = os.getenv("TRAIN_DIR", os.path.join(base_data_dir, "train"))
+    augmented_train_dir = os.getenv("TRAIN_AUG_DIR", os.path.join(base_data_dir, "train_aug"))
+    test_dir = os.getenv("TEST_DIR", os.path.join(base_data_dir, "test"))
 
     # Choose training directory
     if use_augmented and os.path.exists(augmented_train_dir):
-        print("Using augmented + balanced training data.")
+        print(f"Using augmented + balanced training data from: {augmented_train_dir}")
         train_dir = augmented_train_dir
     else:
-        print("Using original training data.")
+        print(f"Using original training data from: {original_train_dir}")
         train_dir = original_train_dir
 
     # Transformations
