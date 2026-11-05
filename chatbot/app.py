@@ -25,11 +25,11 @@ from flask_sqlalchemy import SQLAlchemy
 try:
     from .inference import load_model, predict, transform_image
     from .generate_reports import generate_report
-    from .validators import validate_mri_image, allowed_file, ALLOWED_EXTENSIONS
+    from .validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
 except ImportError:
     from inference import load_model, predict, transform_image
     from generate_reports import generate_report
-    from validators import validate_mri_image, allowed_file, ALLOWED_EXTENSIONS
+    from validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
 
 load_dotenv()
 
@@ -479,8 +479,7 @@ def index():
         except Exception as e:
             return f"Error processing image: {str(e)}", 500
         finally:
-            if os.path.exists(filepath):
-                os.remove(filepath)
+            safe_remove(filepath)
 
     return render_template('index.html',
         current_user=user,

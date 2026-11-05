@@ -1,7 +1,23 @@
 import os
+import time
 from PIL import Image
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'tif', 'tiff'}
+
+def safe_remove(filepath, max_retries=3, delay=0.1):
+    """
+    Safely deletes a file with retries to handle Windows filesystem locking.
+    """
+    if not filepath or not os.path.exists(filepath):
+        return
+    for attempt in range(max_retries):
+        try:
+            os.remove(filepath)
+            return
+        except PermissionError:
+            time.sleep(delay)
+        except Exception:
+            break
 
 MAGIC_NUMBERS = {
     'jpeg': [b'\xff\xd8\xff'],
