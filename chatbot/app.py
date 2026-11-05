@@ -432,9 +432,13 @@ def index():
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
-    user_message = request.json.get('message')
+    if not request.is_json:
+        return jsonify({'error': 'Request payload must be JSON'}), 400
+    user_message = request.json.get('message', '').strip()
+    if not user_message:
+        return jsonify({'error': 'Message content cannot be empty'}), 400
     response     = generate_chatbot_response(user_message)
-    return jsonify({'response': response})
+    return jsonify({'response': response, 'status': 'success'}), 200
 
 @app.route('/clear_chat', methods=['POST'])
 @login_required
