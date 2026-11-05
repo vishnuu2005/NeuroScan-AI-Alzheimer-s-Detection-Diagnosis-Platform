@@ -534,7 +534,11 @@ def index():
             session.pop('chat_session_id', None)
 
         except Exception as e:
-            return f"Error processing image: {str(e)}", 500
+            app.logger.error(f"Inference processing failed: {e}", exc_info=True)
+            if request.path.startswith('/api/') or request.is_json:
+                return api_error(f"Diagnostic inference failed: {str(e)}", 500)
+            flash(f"Diagnostic inference could not be completed: {str(e)}", "error")
+            return redirect(request.url)
         finally:
             safe_remove(filepath)
 
@@ -548,16 +552,82 @@ def index():
         warning=warning, description=description, risk=risk,
         elapsed_ms=elapsed_ms, model_version=model_version)
 
+
+def api_error(message, status_code=400, details=None):
+    """Standardized JSON error responder for RESTful API endpoints."""
+    payload = {
+        "error": message,
+        "status": status_code,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+    if details:
+        payload["details"] = details
+    return jsonify(payload), status_code
+
+
 @app.route('/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST'])
 @login_required
 def chat():
     if not request.is_json:
-        return jsonify({'error': 'Request payload must be JSON'}), 400
+        return api_error('Request payload must be JSON', 400)
     user_message = request.json.get('message', '').strip()
     if not user_message:
-        return jsonify({'error': 'Message content cannot be empty'}), 400
-    response     = generate_chatbot_response(user_message)
-    return jsonify({'response': response, 'status': 'success'}), 200
+        return api_error('Message content cannot be empty', 400)
+    response = generate_chatbot_response(user_message)
+    return jsonify({'response': response, 'status': 'success', 'timestamp': datetime.utcnow().isoformat() + 'Z'}), 200
+
+
+@app.route('/api/scans', methods=['GET'])
+@login_required
+def api_get_scans():
+    """Retrieve the authenticated clinician's scan records as JSON."""
+    user = current_user()
+    scans = Scan.query.filter_by(user_id=user.id).order_by(Scan.created_at.desc()).limit(50).all()
+    results = []
+    for s in scans:
+        try:
+            probs = json.loads(s.all_probs) if s.all_probs else {}
+        except Exception:
+            probs = {}
+        results.append({
+            'id': s.id,
+            'prediction': s.prediction,
+            'confidence': s.confidence,
+            'all_probs': probs,
+            'risk_tier': get_risk_tier(s.prediction),
+            'processing_ms': getattr(s, 'processing_ms', 0.0),
+            'model_version': getattr(s, 'model_version', 'ResNet18'),
+            'created_at': s.created_at.isoformat() if s.created_at else None
+        })
+    return jsonify({'scans': results, 'count': len(results)}), 200
+
+
+@app.route('/api/scans/<int:scan_id>', methods=['GET'])
+@login_required
+def api_get_scan(scan_id):
+    """Retrieve details for a specific diagnostic scan by ID."""
+    user = current_user()
+    scan = Scan.query.get(scan_id)
+    if not scan:
+        return api_error('Scan record not found', 404)
+    if scan.user_id != user.id:
+        return api_error('Unauthorized to access this scan record', 403)
+    try:
+        probs = json.loads(scan.all_probs) if scan.all_probs else {}
+    except Exception:
+        probs = {}
+    return jsonify({
+        'id': scan.id,
+        'prediction': scan.prediction,
+        'confidence': scan.confidence,
+        'all_probs': probs,
+        'risk_tier': get_risk_tier(scan.prediction),
+        'warning': scan.warning,
+        'processing_ms': getattr(scan, 'processing_ms', 0.0),
+        'model_version': getattr(scan, 'model_version', 'ResNet18'),
+        'created_at': scan.created_at.isoformat() if scan.created_at else None
+    }), 200
 
 @app.route('/clear_chat', methods=['POST'])
 @login_required
