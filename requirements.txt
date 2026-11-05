@@ -12,6 +12,4 @@ requests
 Werkzeug
 jinja2
 SQLAlchemy
-python-dotenv
-
-# Optional: add specific versions if needed
+reportlab>=3.6.0
