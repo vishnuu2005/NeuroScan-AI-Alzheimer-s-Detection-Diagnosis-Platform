@@ -28,12 +28,14 @@ try:
     from .validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
     from .formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
     from .clinical_ai import CLINICAL_SYSTEM_PROMPT, generate_local_clinical_response
+    from .logging_config import configure_logging, log_clinical_event
 except ImportError:
     from inference import load_model, predict, transform_image
     from generate_reports import generate_report
     from validators import validate_mri_image, allowed_file, safe_remove, ALLOWED_EXTENSIONS
     from formatters import get_risk_tier, format_stage_label, prepare_chart_dataset
     from clinical_ai import CLINICAL_SYSTEM_PROMPT, generate_local_clinical_response
+    from logging_config import configure_logging, log_clinical_event
 
 load_dotenv()
 
@@ -64,6 +66,7 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
+configure_logging(app)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "neuroscan_secret_2024")
 app.config['SESSION_COOKIE_NAME'] = 'neuroscan_session'
 app.config['SESSION_COOKIE_HTTPONLY'] = True

@@ -65,6 +65,7 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
 
 # Local settings & SQLite databases
 instance/
