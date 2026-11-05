@@ -100,6 +100,23 @@ STAGE_INFO = {
         "risk":  "MODERATE STAGE",
         "risk_icon": "!",
     },
+    "Uncertain": {
+        "description": "The model could not confidently classify this scan. The image quality or scan type may not be optimal for analysis.",
+        "gds": "Inconclusive",
+        "gds_sub": "Unable to Determine",
+        "symptoms": "Unable to determine — please consult a medical professional for interpretation.",
+        "recommendations": [
+            "Upload a clearer, higher-quality MRI scan for improved results.",
+            "Consult a radiologist or neurologist for professional interpretation.",
+            "Ensure the scan is a standard brain MRI (axial or coronal plane).",
+        ],
+        "prognosis": "Inconclusive result. Professional medical evaluation is essential for accurate assessment.",
+        "accent":       colors.HexColor("#6b7280"),
+        "accent_light": colors.HexColor("#f3f4f6"),
+        "accent_mid":   colors.HexColor("#d1d5db"),
+        "risk":  "INCONCLUSIVE",
+        "risk_icon": "?",
+    },
     "Unknown / Low Confidence": {
         "description": "The model could not confidently classify this scan. The image quality or scan type may not be optimal for analysis.",
         "gds": "Inconclusive",
