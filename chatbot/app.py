@@ -355,6 +355,8 @@ def generate_chatbot_response(user_message):
 # ==============================
 # Routes — Auth
 # ==============================
+DUMMY_PASSWORD_HASH = generate_password_hash("neuroscan_timing_mitigation_token_2026")
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -363,8 +365,13 @@ def login():
         if not email or not password:
             flash('Both email and password are required to sign in.', 'error')
             return render_template('login.html'), 400
-        user     = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
+
+        user = User.query.filter_by(email=email).first()
+        # Timing-attack safe password comparison
+        candidate_hash = user.password if user else DUMMY_PASSWORD_HASH
+        is_valid_password = check_password_hash(candidate_hash, password)
+
+        if user and is_valid_password:
             session.clear()
             session.permanent    = True
             session['user_id']   = user.id
@@ -383,6 +390,11 @@ def register():
     
     if not name:
         flash('Full name is required.', 'error')
+        return redirect(url_for('login'))
+
+    if len(password) > 128:
+        flash('Password cannot exceed 128 characters.', 'error')
+        return redirect(url_for('login'))
         return redirect(url_for('login'))
         
     if not email or not EMAIL_REGEX.match(email):
