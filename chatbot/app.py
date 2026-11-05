@@ -703,6 +703,51 @@ def set_security_headers(response):
     response.headers['Content-Security-Policy'] = csp
     return response
 
+
+# ==============================
+# Clinical Error Handlers
+# ==============================
+@app.errorhandler(400)
+def handle_bad_request(e):
+    app.logger.warning(f"400 Bad Request: {request.path} - {e}")
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({"error": "Bad Request", "message": str(getattr(e, 'description', e)), "status": 400}), 400
+    return render_template('errors/400.html', error_message=getattr(e, 'description', None)), 400
+
+
+@app.errorhandler(403)
+def handle_forbidden(e):
+    app.logger.warning(f"403 Forbidden: {request.path} - {e}")
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({"error": "Forbidden", "message": "Access denied.", "status": 403}), 403
+    return render_template('errors/403.html', error_message=getattr(e, 'description', None)), 403
+
+
+@app.errorhandler(404)
+def handle_not_found(e):
+    app.logger.info(f"404 Not Found: {request.path}")
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({"error": "Not Found", "message": "Resource not found.", "status": 404}), 404
+    return render_template('errors/404.html', error_message=getattr(e, 'description', None)), 404
+
+
+@app.errorhandler(413)
+def handle_large_payload(e):
+    app.logger.warning(f"413 Payload Too Large: {request.path}")
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({"error": "Payload Too Large", "message": "Uploaded scan exceeds the 16 MB limit.", "status": 413}), 413
+    flash("The uploaded file exceeds the maximum allowed size of 16 MB.", "error")
+    return redirect(url_for('index'))
+
+
+@app.errorhandler(500)
+def handle_internal_error(e):
+    app.logger.error(f"500 Internal Error: {request.path} - {e}", exc_info=True)
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({"error": "Internal Server Error", "message": "An unexpected diagnostic error occurred.", "status": 500}), 500
+    return render_template('errors/500.html'), 500
+
+
 # ==============================
 # Run
 # ==============================
