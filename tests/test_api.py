@@ -170,3 +170,17 @@ def test_malformed_requests_and_unsupported_methods(api_users):
     # 3. Non-existent resource deletion returns 404
     resp_not_found = client.post('/delete_scan/999999')
     assert resp_not_found.status_code == 404
+
+def test_unsupported_http_methods(api_users):
+    u1_id, _ = api_users
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess['user_id'] = u1_id
+
+    # GET on clear_chat returns 405
+    resp_get_clear = client.get('/clear_chat')
+    assert resp_get_clear.status_code == 405
+
+    # PUT on login returns 405
+    resp_put_login = client.put('/login')
+    assert resp_put_login.status_code == 405
